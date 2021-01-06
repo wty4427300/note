@@ -34,7 +34,7 @@ bmap就是我们常说的桶，桶里面最多会装8个key，这些key之所以
 
 当map的key和value都不是指针，并且size都小于128字节的情况下，会把bmap标记为不含指针，这样可以避免gc时扫描整个hmap。但是，我们看bmap其实有一个overflow的字段，是指针类型的。破坏了bmap不含指针的设想，这时会把overflow移动到extra字段来。
 
-bucket 里面最多能存储8对key value,key和value是分别放在一起的。为了节省内存空间。w
+bucket 里面最多能存储8对key value,key和value是分别放在一起的。为了节省内存空间。
 
 
 
