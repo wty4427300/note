@@ -106,12 +106,19 @@ cas会有aba问题就是要被赋值的变量在检测的时候，由a变成了b
     多线程在不同时间段请求同一把锁，也就是说没有锁竞争需要轻量级锁
     锁一直被同一个线程所持有，使用偏向锁即可
 
+    synchronized四种写法嘛
+    1.显式锁对象
+    2.锁方法
+    这两种是锁的实例化的对象
+    3.锁static方法
+    4.锁代码块
+    是锁的类.class这个对象
+
 wait()和sleep()的区别
 wait()来自Object类，sleep()来自Thread类
 调用 sleep()方法，线程不会释放对象锁。而调用 wait() 方法线程会释放对象锁；
 sleep()睡眠后不出让系统资源，wait()让其他线程可以占用 CPU；
 sleep(millionseconds)需要指定一个睡眠时间，时间一到会自然唤醒。而wait()需要配合notify()或者notifyAll()使用
-
 
 # 6.类加载的过程
 1.加载 2.链接 3.初始化
@@ -126,8 +133,6 @@ sleep(millionseconds)需要指定一个睡眠时间，时间一到会自然唤�
 什么叫做双亲委派模型
 1.就是一个类被加载的时候先找父类加载器，再找当前加载器
 2.类加载器分为bootstrap（.jar）,ext(/jre/lib),app(classpath),自定义加载器
-
-
 
 # 7.逃逸分析的判断
 
@@ -425,12 +430,11 @@ UDP 则没有，即使网络非常拥堵了，也不会影响 UDP 的发送速�
 ## ABA
 解决方式版本号or时间戳
 
-
 # 22.关于hashmap的一切
 
 ## 1.组成
 是有数组和链表组成的，根据hash求出数组索引
-。当索引重复的时候新的键值对就会在链表上增加一个节点
+。当索引重复的时候新的键值对就会在链表上增加一个节点(Node<k,v>)
 
 ## 2.当hash重复的时候是如何插入的呢？
 1.8之前是头插法（就是插在链表的头部）
@@ -440,18 +444,31 @@ UDP 则没有，即使网络非常拥堵了，也不会影响 UDP 的发送速�
 因为头插法会在多线程插入且rehash的时候形成循环链表
 尾插法不会修改链表的顺序所以不会引发这个问题
 
-## 3.为何resize何时resize
+## 3.为何resize,何时resize
 1.当容量不够的时候需要扩容，就需要resize了
 2.当存储的键值对达到容量*0.75(负载因子)就需要resize
 
 ## 如何扩容
-1.创建一个长度是原数组两倍的新数组
+1.创建一个长度是原数组两倍的新数组(oldThr << 1 左移相当于*2).
 2.遍历原数组，把所有键值对重新hash到新数组里面
 
-## 为什么rehash
-1.求index的公式index = HashCode（Key） & （Length - 1）
-当数组长度不一致时计算出来的值也变了。
+## 如何计算hash值
+hash=key.hashcode() ^ (key.hashcode()>>>16)
+1.为什么选择^(异或)
+1,1
+0,1
+1,0
+0,0
+或:(有一个1就为真所以75%为1).
+与:(有两个1才为真所以75%为0).
+异或:(操作位相同为真所以0,1几率都为50%).
+从数字重复几率的角度选择操作符为^.
+右移16位相当与保留了高16的信息(从低到高从右到左)
 
+## 为什么rehash
+1.求index的公式index =hash（Key） & （Length - 1）
+当数组长度不一致时(也就是扩容的时候)计算出来的值也变了。
+ 
 ## 为什么是默认初始化容量是16
 因为16-1是15，15的二进制是1111
 可以的hashcode&1111得出的十进制数就是4，只要length-1不是2的幂数，那么转二进制之后，
@@ -471,7 +488,7 @@ UDP 则没有，即使网络非常拥堵了，也不会影响 UDP 的发送速�
 2.开放地址法：当前桶被占了，就用一定的方式去找下一个桶，直到找到空的
 
 ## 什么时候转红黑树
-当链表长度大于8的时候。
+当链表大小超过8个的时候。
 
 ## 与hashtable的对比
 1.hashtable是并发安全的，hashmap不是，所以在多线程写入的时候会有数据覆盖问题。hashtable不允许键值为null，hashmap允许
@@ -491,10 +508,13 @@ hashtable：
 # 23.ConcurrentHashMap
 使用了分段锁，锁的是数组的每一个元素。
 
+默认容量是16
+
 ## 插入
 1.先是尝试获取锁
-2.自旋获取锁
+2.自旋获取锁(scanAndLockForPut(key,hash,value))
 3.自旋到一定次数，改为阻塞获取锁
+4.put的时候会判断value==null如果等于会抛出异常
 
 也就是说一定是获取锁再去操作
 
@@ -581,7 +601,7 @@ LFU 对每个访问信息记数，踢走访问次数最的那个，如果访问�
 4.对于每个节点的值都大于等于子树中每个节点值的堆，我们叫做“大顶堆”。对于每个节点的值都小于等于子树中每个节点值的堆，我们叫做“小顶堆”。
 
 5.因为是完全二叉树，所以适合存储在数组里。如果一个节点为下标i，那么左节点为i*2,右节点为
-i*2+1，如果有父节点那父节点为i/2
+i*2+1，如果有父节点那父节点为i/2\x32
 
 ## 1.添加一个节点
 直接将数据放在堆尾，然后开始判断有没有父节点即i/2>0。
@@ -602,7 +622,300 @@ i*2+1，如果有父节点那父节点为i/2
 
 首先将根节点个尾节点作交换，然后对交换后树进行堆化即可。
 
-# 31.gaunyu  dfsdf
+# 31.关于redis分布式锁的问题
+
+## 1.上锁
+set命令要用set key value px milliseconds nx
+jedis.set(String key, String value, String nxxx, String expx, int time)
+需要5个参数为了解决四个问题
+
+1.**互斥性。**在任意时刻，只有一个客户端能持有锁。
+
+2.**不会发生死锁。**即使有一个客户端在持有锁的期间崩溃而没有主动解锁，也能保证后续其他客户端能加锁。
+
+3.**具有容错性。**只要大部分的Redis节点正常运行，客户端就可以加锁和解锁。d
+
+4.**解铃还须系铃人。**加锁和解锁必须是同一个客户端，客户端自己不能把别人加的锁给解了。
+
+第一个为key，我们使用key来当锁，因为key是唯一的。
+
+第二个为value，我们传的是requestId，很多童鞋可能不明白，有key作为锁不就够了吗，为什么还要用到value？
+原因就是我们在上面讲到可靠性时，分布式锁要满足第四个条件解铃还须系铃人，通过给value赋值为requestId，
+我们就知道这把锁是哪个请求加的了，在解锁的时候就可以有依据。requestId可以使用UUID.randomUUID().toString()方法生成。
+
+第三个为nxxx，这个参数我们填的是NX，意思是SET IF NOT EXIST，即当key不存在时，我们进行set操作；若key已经存在，则不做任何操作；
+
+第四个为expx，这个参数我们传的是PX，意思是我们要给这个key加一个过期的设置，具体时间由第五个参数决定。
+
+第五个为time，与第四个参数相呼应，代表key的过期时间。
+
+## 2.解锁
+String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+Object result = jedis.eval(script, Collections.singletonList(lockKey), Collections.singletonList(requestId));
+if (RELEASE_SUCCESS.equals(result)) {
+    return true;
+}
+
+首先获取锁对应的value值，检查是否与requestId相等，如果相等则删除锁（解锁）
+
+使用eval()可以保证原子性
+
+## 3.缺陷
+如果我们在master节点获取了锁，且锁还没有没有被同步到slave节点，此时如果master节点出现错误，slave节点升级为master节点就会导致锁丢失
+
+## 4.redlock(3,5,7奇数节点)
+
+1.获取当前Unix时间，以毫秒为单位。
+
+2.依次尝试从5个实例，使用相同的key和具有唯一性的value（例如UUID）获取锁。
+当向Redis请求获取锁时，客户端应该设置一个网络连接和响应超时时间，这个超时时间应该小于锁的失效时间。
+例如你的锁自动失效时间为10秒，则超时时间应该在5-50毫秒之间。这样可以避免服务器端Redis已经挂掉的情况下，客户端还在死死地等待响应结果。
+如果服务器端没有在规定时间内响应，客户端应该尽快尝试去另外一个Redis实例请求获取锁。
+
+3.客户端使用当前时间减去开始获取锁时间（步骤1记录的时间）就得到获取锁使用的时间。
+当且仅当从大多数（N/2+1，这里是3个节点）的Redis节点都取到锁，并且使用的时间小于锁失效时间时，锁才算获取成功。
+
+4.如果取到了锁，key的真正有效时间等于有效时间减去获取锁所使用的时间（步骤3计算的结果）。
+如果因为某些原因，获取锁失败（没有在至少N/2+1个Redis实例取到锁或者取锁时间已经超过了有效时间）
+，客户端应该在所有的Redis实例上进行解锁（即便某些Redis实例根本就没有加锁成功，
+防止某些节点获取到锁但是客户端没有得到响应而导致接下来的一段时间不能被重新获取锁）。
+
+# 32.nio
+客户端 到 buffer 到channel 到selector 到线程 开始执行
+selector.open获取一个选择器
+1.当客户端连接时，会通过serversocketchannel得到对应的socketchannel
+2.selector进行监听 select()方法（可使用阻塞或者非阻塞方法），返回有事件发生的通道的个数。
+3.将得到的channel注册到selector
+4.注册后得到一个selectionkey,会被selector管理，以集合的方式
+5.四种事件 读事件 写事件 连接成功事件 新连接事件
+6.获取selectionkey
+7.通过key获取channel
+7.通过channel完成业务的处理
+
+# 33.索引问题
+索引解决的问题
+1.索引极大的减少了扫描行数
+2.避免重排序和临时表
+3.将随机io变成顺序io
+
+select * from user order by age desc;
+这条sql会将所有的行加载到内存之后，再按age排序生成一张临时表表
+再将这张表排序后返回给客户端如果临时表大于tmp_table_size的值（默认16M）,
+那么这张内存临时表会变成磁盘临时表，如果加了索引的话，
+索引本身是有顺序的，所以从磁盘读取行数本身就是按照age排序好的
+不用生成临时表和额外排序，提升了性能
+
+ 什么时候sql的索引失效呢
+ 1.当sql语句中索引列是函数或者表示式的一部分
+ 即where条件后面跟的是一个计算过程或者函数调用
+
+
+ 2.隐式类型转换
+ 比如说表里存的是个string但是sql写的是个int就会触发隐式类型转换
+ 就会调用cast函数，于是就触发了上一条规约
+
+ 3.隐式编码转换
+ 如果两张表编码不一致那么当一句sql涉及到这两张表时就会触发隐式的函数调用
+ 转换编码集
+
+ 因为使用order by导致的全表扫描，加了索引还是全表扫描了，因为select *导致了回表查询
+
+ 什么是回表查询呢
+
+ 我们都知道普通索引叶子节点存主键id，聚簇索引叶子节点存具体的行的值
+
+ 我们如果使用聚簇索引查到索引就找相对的行的值
+
+ 如果使用普通索引就会先找到主键id，然后再走一遍聚簇索引找到具体的记录
+
+ 这样就走了两次索引查询，故而叫做回表查询
+
+# 34.mysql事务
+事物的四大特性
+1.原子性：是一个不可分割的整体，要么全都执行，要么全不执行。执行出错事务回滚。
+2.隔离性：同一时间，只允许一个事务请求同一组数据。不同事物彼此之间没有干扰。
+3.一致性：事务开始前和开始后。数据库的完整性约束没有被破坏。
+4.持久性：事务完成后落盘，不能回滚。
+
+事务的并发问题
+脏读：事务A读取了事务B的数据，事务B回滚，A读到了脏数据。
+幻读:事务A修改表A，事务B向表A插入了一条数据，事务A修改完发现表A有一条记录还没有被修改。
+不可重读：事务Ａ不断的读表Ａ，事务Ｂ不断的修改表Ａ。导致事务Ａ读取到的数据不一致。
+
+四大隔离级别
+
+１．读未提交。就是读到脏数据
+２．读已提交。就是要等另一个事务提交完了，才能够读取。解决了脏读问题
+３．可重读。保证了每次的读到的数据一致，不管其他事务是否已经提交。解决了不可重读问题
+４．序列化。开启一个序列化事务，其他事务的对数据表的写操作都会挂起。
+
+mysql
+有行锁表锁页锁三种innob只有行锁表锁两种。
+表锁
+行锁
+页锁
+
+# 35.mybatis的缓存
+
+## 1.一级缓存(一级缓存sqlsession) 
+
+1.同一个 SqlSession 对象， 在参数和 SQL 完全一样的情况先， 只执行一次 SQL 语句
+
+2.在同一个 SqlSession 中, Mybatis 会把执行的方法和参数通过算法生成缓存的键值， 将键值和结果存放在一个 Map 中， 如果后续的键值一样， 则直接从 Map 中获取数据；
+
+3.不同的 SqlSession 之间的缓存是相互隔离的；
+
+4.用一个 SqlSession， 可以通过配置使得在查询前清空缓存；
+
+5.任何的 UPDATE, INSERT, DELETE 语句都会清空缓存。
+
+## 2.二级缓存(二级缓存mapper)
+
+二级缓存是用来解决一级缓存不能跨会话共享的问题的，范围是namespace 级别的，可以被多个SqlSession 共享（只要是同一个接口里面的相同方法，都可以共享），生命周期和应用同步。如果你的MyBatis使用了二级缓存，并且你的Mapper和select语句也配置使用了二级缓存，那么在执行select查询的时候，MyBatis会先从二级缓存中取输入，其次才是一级缓存，即MyBatis查询数据的顺序是：二级缓存   —> 一级缓存 —> 数据库。缓存的清除策略也是lru。增删改都会刷新缓存，而且是namespace级别的。所以比较好的实践是将一个表的相关的sql放入同一个mapper里面，这样既方便管理，同时也不会让二级缓存影响其他表。
+
+## 3.关于mapper和repository
+1.相同点
+两个都是注解在Dao上
+
+2.不同
+@Repository需要在Spring中配置扫描地址，然后生成Dao层的Bean才能被注入到Service层中。
+
+@Mapper不需要配置扫描地址，通过xml里面的namespace里面的接口地址，生成了Bean后注入到Service层中。
+
+# 36.mysql相关
+
+## 1.mysql的执行流程
+1.连接器：请求接收和权限验证
+2.查询缓存：命中则直接返回结果
+3.分析器：词法分析，语法分析
+4.优化器：执行计划生成，索引选择
+5.执行器：操作引擎，返回结果
+
+### 相关问题
+1.使用长连接过多会导致mysql内存暴涨，因为在mysql执行时使用的内存是管理在连接对象里面的。这些资源会在连接断开的时候才释放。
+
+2.如果create table的时候不指定存储引擎会默认使用innodb
+
+3.一个连接除了建立以外如果没有后续动作，那么就是空闲连接，mysql的空闲连接是8小时断开
+
+解决方案：
+    1.定期断开连接，或者程序里面判断执行过一个占用内存的大查询后。断开连接。之后要查询再重连。
+
+    2.如果你用的mysql 5.7之后的版本，可以在每次执行一个比较大的操作后初始化连接资源
+
+### 查询缓存
+
+当连接建立以后就可执行语句了，mysql拿到一个请求会先去查询缓存看看，之前是不是执行过这条语句。之前执行过的语句可能会以key-value的形式，被直接缓存在内存里。key的相应的查询语句value是查询的结果。
+
+建议不要使用查询缓存
+    1.查询缓存失效非常的频繁，只要有对一个的更新，这个表上所有的缓存都会被清空。因此你可能费劲的把查询结果缓存了起来，还没使用就被一个更新全部清空了。
+
+    2.由上一条推出，那些更新很少，或者基本不怎么更新的表比较适合使用查询缓存。
+    你可以将参数 query_cache_type 设置成 DEMAND这样对于默认的 SQL 语句都不使用查询缓存。而对于你确定要使用查询缓存的语句，可以用 SQL_CACHE 显式指定，像下面这个语句一样。
+
+    当然
+
+# 37.jwt
+第一部分我们称它为头部（header),第二部分我们称其为载荷（payload, 类似于飞机上承载的物品)，第三部分是签证（signature).
+1.header:
+{
+  'typ': 'JWT',
+  'alg': 'HS256'
+}
+加密方式base64
+2.payload:
+自己添加的一些信息
+{
+
+}
+加密方式还是base64
+3.signature
+使用用户选定的加密算法加盐的方式进行生成
+
+三段用.组合就是jwt.
+
+# 38.关于自动装箱类型的测试
+使用自动装箱类型:6500
+使用基本类型:702
+
+计算还是不要使用对象类型,性能差了9倍还多.恐怖
+
+# 39.g1
+g1将整个内存划分成了一个个region，region有四种类型
+1.eden
+2.survior
+3.humongous
+4.old
+
+
+G1垃圾收集算法主要应用在多CPU大内存的服务中，在满足高吞吐量的同时，尽可能的满足垃圾回收时的暂停时间，该设计主要针对如下应用场景：
+重要的几个点
+1.垃圾回收线程和应用线程并发执行。（说明垃圾回收还是会影响应用的运行）
+2.空闲内存压缩时避免冗长的暂停时间
+3.应用需要更多可预测的GC暂停时间
+4.不希望牺牲太多的吞吐性能
+
+G1的几个概念：
+Region：G1收集器所划分的内存区域（划分内存的基本单位）
+SATB：Snapshot-At-TheBeginning，它是通过Root Tracing得到的，GC开始时候存活对象的快照
+RSet：记录了其他Region中的对象，引用本Region中对象的关系，属于points-into结构（谁引用了我的对象
+
+G1中的Young GC过程，和以往的是一样的：
+新对象进入Eden区
+存活对象拷贝到Survivor区
+存活时间达到年龄阈值时，对象晋升到Old区
+
+但是G1中没有Full GC，取而代之的是Mixed GC：
+它不是Full GC，所以触发Mixed GC时回收的是所有的Young区和部分Old区的垃圾
+
+G1里还有一个概念叫全局并发标记（global concurrent marking），和CMS的并发标记是类似的：
+1.Initial marking phase：标记GC Root，STW
+2.Root region scanning phase：根区扫描
+3.Concurrent marking phase：并发标记存活对象
+4.Remark phase：重新标记，STW
+Cleanup phase：部分STW
+
+G1相关调优参数：
+设置堆占有率达到这个参数值则触发global concurrent marking，默认值为45%：
+-XX:InitiatingHeapOccupancyPercent
+设置在global concurrent marking结束之后，可以知道Region里有多少空间要被回收，在每次YGC之后和再次发生Mixed GC之前，会检查垃圾占比是否达到此参数的值，只有达到了，下次才会发生Mixed GC：
+-XX:G1HeapWastePercent
+设置Old区的Region被回收时的存活对象占比：
+-XX:G1MixedGCLiveThresholdPercent
+设置一次global concurrent marking之后，最多执行Mixed GC的次数：
+-XX:G1MixedGCCountTarget
+设置一次Mixed GC中能被选入CSet的最多Old区的Region数量：
+-XX:G1OldCSetRegionThresholdPercent
+
+其他参数：
+-XX:+UseG1GC //开启G1收集器
+-XX:G1HeapRegionSize=n //设置Region的大小，大小范围：1-32M，数量上限：2048个
+-XX:MaxGCPauseMillis=200 //设置最大停顿时间
+-XX:G1NewSizePercent //设置Young区大小
+-XX:G1MaxNewSizePercent //设置Young区最大占整个Java Heap的大小，默认值为60%
+-XX:G1ReservePercent=10 //保留防止to space溢出
+-XX:ParallelGCThreads=n //设置SWT线程数
+-XX:ConcGCThreads=n //并发线程数=1/4*并行
+
+注意事项：
+年轻代大小：避免使用-Xmn、-XX:NewRatio等显式设置Young区大小，会覆盖暂停时间目标
+暂停时间目标：暂停时间不要太严苛，其吞吐量目标是90%的应用程序时间和10%的垃圾回收时间，太严苛会直接影响到吞吐量
+
+nohup java -XX:+UseG1GC -Xmx1024M -Xms1024M -XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -jar dental-customer.jar > customer.out  2>&1 &
+
+nohup java -XX:+UseG1GC -Xmx512M -Xms512M -XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -jar dental-report.jar > report.out  2>&1 &
+
+nohup java -XX:+UseG1GC -Xmx1024M -Xms1024M -XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -jar dental-search.jar > search.out  2>&1 &
+
+nohup java -XX:+UseG1GC -Xmx1024M -Xms1024M -XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -jar dental-service.jar > service.out  2>&1 &
+
+nohup java -XX:+UseG1GC -Xmx1024M -Xms1024M -XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -jar dental-web-admin.jar > admin.out  2>&1 &
+
+# 40.双检锁的一些问题
+外层判空是为了解决已经实例化对象后调用方法的性能问题（访问修饰锁的方法有较大开销） 中间加锁的方法是为了保证同一时间只有一个线程去实例化对象 内层判空是为了解决非原子操作可能因指令重排序导致的问题
+
+
+
 
 
 
