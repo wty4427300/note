@@ -9,7 +9,7 @@ redis缓存失效原因
 1.有效期过短
 2.内存满了（lru/lfu）
 3.重启rdb全量持久化 aof增量持久化
-(save 多少秒 多少个) () 
+(save 多少秒 多少个) ()
 
 关于redis分布式锁的问题
 1.上锁
@@ -41,7 +41,7 @@ jedis.set(String key, String value, String nxxx, String expx, int time)
 String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
 Object result = jedis.eval(script, Collections.singletonList(lockKey), Collections.singletonList(requestId));
 if (RELEASE_SUCCESS.equals(result)) {
-    return true;
+return true;
 }
 
 首先获取锁对应的value值，检查是否与requestId相等，如果相等则删除锁（解锁）

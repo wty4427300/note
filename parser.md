@@ -52,7 +52,6 @@ generate随机：每条规则都随机选择一个分支
 由于tidb和parser互相依赖所以需要两个go mod我们需要在编译的时候cp go.mod1 go.mod
 cp go.sum1 go.sum这样就可以在goland中运行parser了。
 
-
 直接执行parser_test.go
 
 测试用例，预期能不能过　，把ast转换成sql
@@ -74,8 +73,6 @@ cp go.sum1 go.sum这样就可以在goland中运行parser了。
 提交代码
 
 make parser重新生成parser.go
-
-
 
 我要做的1.删除测试用例。
 
