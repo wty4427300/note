@@ -38,5 +38,3 @@
 2.如果eden区没有合适的空间就会触发ygc
 
 3.ygc时，对eden区和from survivor区的存活对象进行处理，如果满足动态年龄判断的条件或者to survivor空间不够则直接进去老年代。
-
-4.
