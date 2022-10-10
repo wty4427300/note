@@ -108,13 +108,8 @@ shader就是mesh和材质的的组合.我要渲染一个面,这个面要渲染�
 环境贴图简化的光反射的计算.
 基本的shading = simple light(简化的光源,点光,方向光,圆锥光等等)+ambient(除去主光外的物体表面光场的平均值)+Environment map(环境贴图)
 计算阴影,光源积分和视线积分的交集就是阴影.
-Blinn-Phong模型=Ambient（环境）+ Diffuse（漫反射）+ Specular（高光）.缺点能量不守衡,出射光可能大于入射光.
-
-
-的平均值)+Environment
-map(环境贴图)
-计算阴影,光源积分和视线积分的交集就是阴影.
 Blinn-Phong模型=Ambient（环境）+ Diffuse（漫反射）+ Specular（高光）.缺点能量不守衡,出射光可能大于入射光.表现不佳,有一种塑料感
+
 
 
 
