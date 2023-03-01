@@ -1078,8 +1078,17 @@ partition是以写log的方式落盘的所以一定是有序的.
 1.有积压,一般就是consumer出问题了.做法先修复问题保证正常消费.然后不做消息处理,而是转发到提前准备的多个队列中,开多
 consumer消费,消费完毕后,恢复原有架构即可.
 
-#
-
+# 43.linux下的五种io模型
+## Blocking I/O：
+阻塞 I/O
+## Non-Blocking I/O：
+非阻塞 I/O
+## I/O Multiplexing：
+I/O 多路复用
+## Signal Blocking I/O：
+信号驱动 I/O
+## Asynchronous I/O：
+异步 I/O
 
 
 
