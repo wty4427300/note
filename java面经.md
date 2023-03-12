@@ -317,7 +317,7 @@ RejectedExecutionHandler handler//拒绝策略
 3.DiscardPolicy：直接丢弃任务，没有任何异常抛出。
 4.DiscardOldestPolicy：丢弃最老的任务，其实就是把最早进入工作队列的任务丢弃，然后把新任务加入到工作队列。
 
-# 18.mysql方案的天花板
+# 18.mysql方案的一些问题.
 
 1.执行计划是单机的
 2.如果一张表分布在不同的mysql server中那么读取下一行可能会很大
@@ -825,10 +825,27 @@ select * from user order by age desc;
 同时基础继续处理其他事务,然后在数据加载完毕时重新启动事务.
 
 mysql
-有行锁表锁页锁三种innob只有行锁表锁两种。
-表锁
-行锁
-页锁
+有行锁表锁页锁三种
+innob只有行锁表锁两种。
+
+行所=锁
+Record Lock（记录锁）：锁住某一行记录
+Gap Lock（间隙锁）：锁住一段左开右开的区间
+Next-key Lock（临键锁）：锁住一段左开右闭的区间
+
+隐式加锁
+对于常见的 DML 语句（如 UPDATE、DELETE 和 INSERT ），InnoDB 会自动给相应的记录行加写锁
+默认情况下对于普通 SELECT 语句，InnoDB 不会加任何锁，但是在 Serializable 隔离级别下会加行级读锁
+
+显式加锁
+SELECT * FROM table_name WHERE ... FOR UPDATE，加行级写锁
+SELECT * FROM table_name WHERE ... LOCK IN SHARE MODE，加行级读锁
+
+加锁的基本单位是next-key lock
+当查询的记录是存在的，Next-key Lock 会退化成记录锁
+当查询的记录是不存在的，Next-key Lock 会退化成间隙锁
+
+
 
 # 35.mybatis的缓存
 
