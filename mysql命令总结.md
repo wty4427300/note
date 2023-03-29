@@ -96,7 +96,7 @@ alter table 表名 drop 字段名
 alter table 表名 add 字段名 数据类型
 
 添加到第一列
-alter table 表名 add 字段名 数据类型 frist
+alter table 表名 add 字段名 数据类型 first
 
 添加到某字段之后
 
@@ -176,12 +176,12 @@ SHOW CREATE TABLE 表名 \G;
 得到完整结构，然后执行就像完事了。
 
 INSERT INTO clone_tbl (runoob_id,
-->                        runoob_title,
-->                        runoob_author,
-->                        submission_date)
--> SELECT runoob_id,runoob_title,
-->        runoob_author,submission_date
--> FROM runoob_tbl;
+->runoob_title,
+->runoob_author,
+->submission_date)
+->SELECT runoob_id,runoob_title,
+->runoob_author,submission_date
+->FROM runoob_tbl;
 
 ## mysql复制表的两种方式。
 
@@ -195,7 +195,8 @@ create table 新表 like 旧表
 
 第二、复制表结构及数据到新表
 
-create table新表 select * from 旧表 
+create table新表 select * from 旧表
+
 
 
 

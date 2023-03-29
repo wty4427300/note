@@ -92,3 +92,5 @@ buffer pool,redo log只存page级别的数据变更.innodb如果判断一个数�
 
 先写redo log buffer,在commit的时候再去写具体的buffer.
 
+#
+
