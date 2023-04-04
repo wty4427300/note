@@ -137,8 +137,20 @@ for update的锁,会在两阶段提交的commit阶段释放.
 设置wait_timeout即空闲的链接在这个秒数后会断开.
 
 # mysql如何保证数据不丢失
+
 只要写了redo log和binlog就可以保证异常重启数据不丢失.
 
-事务执行的时候先写binlog cache,事务提交的时候写binlog.
+## binlog写入
 
+事务执行的时候先写binlog cache,事务提交的时候写binlog.
 一个事务的binlog是不可拆分的,因此不管事务多大,也要保证单次写入.
+
+binlog cache的大小由,binlog cache size控制,每个线程一个binlog cache
+如果单个线程的binlog cache大小超过了限制,就要暂存到磁盘里.(存储常见的套路).
+
+sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync;
+sync_binlog=1 的时候，表示每次提交事务都会执行 fsync;
+sync_binlog=N(N>1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync;
+
+## redo log写入
+redo log buffer,在提交的时候写到redo log(disk).
