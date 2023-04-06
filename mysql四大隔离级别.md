@@ -153,4 +153,32 @@ sync_binlog=1 的时候，表示每次提交事务都会执行 fsync;
 sync_binlog=N(N>1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync;
 
 ## redo log写入
+
 redo log buffer,在提交的时候写到redo log(disk).
+
+设置为 0 的时候,表示每次事务提交时都只是把 redo log 留在 redo log buffer 中 ;
+设置为 1 的时候,表示每次事务提交时都将 redo log 直接持久化到磁盘;
+设置为 2 的时候,表示每次事务提交时都只是把 redo log 写到 page cache.
+
+read only对super用户是无效的.
+
+xid是用来联系bin log和redo log的,比如redo log里面有一个事务
+是prepare状态,但不知道是commit状态,那就可以用xid去bin log查询该事务
+是否提交,有提交则是commit状态.若没有提交则回滚该事务.
+
+# 主备一致
+bin log的三种类型
+
+limit 1语句的风险:多where条件下可能走不同的索引,不同索引获取的第一条信息不同
+如果是写语句,就会修改不同而row.
+
+binlog的三种模式
+statement:记录 语句原文.
+row:记录的是event即对row做了什么操作.记录了真实操作航的主键id.
+mixed=statement+row:因为row会记录这条记录本身,如果写10w行,那binlog
+里面也会保存10w行数据,耗费很多io资源,所以则这种格式就由mysql自己判断,
+记录那种格式的binlog.
+
+# 高可用
+主备延迟最主要的原因是,备库消费日志比主库生产日志要慢.
+
