@@ -167,6 +167,7 @@ xid是用来联系bin log和redo log的,比如redo log里面有一个事务
 是否提交,有提交则是commit状态.若没有提交则回滚该事务.
 
 # 主备一致
+
 bin log的三种类型
 
 limit 1语句的风险:多where条件下可能走不同的索引,不同索引获取的第一条信息不同
@@ -180,6 +181,7 @@ mixed=statement+row:因为row会记录这条记录本身,如果写10w行,那binl
 记录那种格式的binlog.
 
 # 高可用
+
 主备延迟最主要的原因是,备库消费日志比主库生产日志要慢.
 主备延迟的一些情况:
 1.备库cpu满了,读请求太多,影响了数据同步
@@ -187,6 +189,7 @@ mixed=statement+row:因为row会记录这条记录本身,如果写10w行,那binl
 ...
 
 # 多线程复制
+
 1.coordinator负责读取中转日志和分发事务,更新日志由worker线程来执行
 数量由slave_parallel_workers来决定
 
@@ -195,6 +198,7 @@ mixed=statement+row:因为row会记录这条记录本身,如果写10w行,那binl
 2.同一个事务不能备拆分,必须放到同一个worker中.
 
 ## 按照表分发的方案
+
 因为一个事务可能涉及多个worker
 所以每次分配的时候应该遍历所以普的worker的等待队列
 如果只有一个冲突在放在对应worker的队列后面,如果有一个以上的冲突
@@ -202,9 +206,11 @@ mixed=statement+row:因为row会记录这条记录本身,如果写10w行,那binl
 如果不冲突那就分配给最闲的worker.
 
 ## 按行分发的方案
+
 核心思路就是如果两个事务不更新相同的行,就能在备库上并行执行所以这个模式需要binlog为row格式.
 
 ## 按照redo log group分配
+
 能够在同一组里提交的事务,一定不会修改同一行.
 主库上可以并行执行的事务,备库上也一定是可以并行执行的。
 
@@ -218,6 +224,7 @@ binlog_group_commit_sync_delay 参数，表示延迟多少微秒后才调用 fsy
 binlog_group_commit_sync_no_delay_count 参数，表示累积多少次以后才调用 fsync。
 
 ## 参数binlog-transaction-dependency-tracking
+
 hash(值是通过 库名 + 表名 + 索引名 + 值 计算出来的)
 
 COMMIT_ORDER，表示的就是前面介绍的，根据同时进入 prepare 和 commit 来判断是否可以并行的策略。
@@ -225,3 +232,26 @@ WRITESET，表示的是对于事务涉及更新的每一行，计算出这一行
 如果两个事务没有操作相同的行，也就是说它们的 writeset 没有交集，就可以并行。WRITESET_SESSION，
 是在 WRITESET 的基础上多了一个约束，即在主库上同一个线程先后执行的两个事务，在备库执行的时候，要保证相同的先后顺序。
 
+# 一主多从
+
+基于点位的主备切换:
+
+CHANGE MASTER TO
+MASTER_HOST=$host_name
+MASTER_PORT=$port
+MASTER_USER=$user_name
+MASTER_PASSWORD=$password
+MASTER_LOG_FILE=$master_log_name
+MASTER_LOG_POS=$master_log_pos
+
+这六个参数重要的是最后两个:使用那个日志文件的,那个位置开始.也就是主库对应的文件名和日志偏移量
+如何获取 master_log_pos
+备库同步完毕,执行show master status,获取备库上最新的file和pos
+取主库的的故障时间T
+用mysql binlog工具解析备库的file获取T时刻的pos.
+
+同步的过程中可能会有sql重复执行导致的错误,比如主键冲突之类的,只要跳过就好.
+set global sql_slave_skip_counter=1;
+start slave;
+
+# 读写分离
