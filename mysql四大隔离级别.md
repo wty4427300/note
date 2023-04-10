@@ -255,3 +255,46 @@ set global sql_slave_skip_counter=1;
 start slave;
 
 # 读写分离
+
+读写分离策略由于主从延迟,会导致读库上读到旧数据.
+
+## 解决方案:
+
+1. 强制走主库.
+2. Sleep 方案
+   即主库更新后,读库的读请求sleep 1秒之后在执行,大概率能获取新值
+3. 判断主备无延迟方案
+   看show slave status的seconds_behind_master.
+   Master_Log_File 和 Read_Master_Log_Pos，表示的是读到的主库的最新位点；
+   Relay_Master_Log_File 和 Exec_Master_Log_Pos，表示的是备库执行的最新位点。
+   当他们相同的时候,则说明同步完成.
+   Auto_Position=1 ，表示这对主备关系使用了 GTID 协议。
+   Retrieved_Gtid_Set，是备库收到的所有日志的 GTID 集合；
+   Executed_Gtid_Set，是备库所有已经执行完成的 GTID 集合。
+   如果这两个集合相同，也表示备库接收到的日志都已经同步完成。
+   这种方案的问题是:binlog发给备库,但还没执行完,所以还是会查到旧的数据.
+
+4. 配合semi-sync
+   也就是半同步复制.
+   事务提交的时候主库把binlog发给从库.
+   从库收到binlog以后,发回给主库一个ack.
+   主库收到ack以后,才给客户端返回 事务完成.
+   但是一主多从,还是会有问题.因为只要一个从库ack,就会回应,所以
+   其他从库可能还是旧数据.
+
+5. 等主库位点方案
+   主动去主库执行 show master status.获取 file 和 pos
+   select master_pos_wait(file, pos[, timeout]);
+   它是在从库执行的；
+   参数 file 和 pos 指的是主库上的文件名和位置；
+   timeout 可选，设置为正整数 N 表示这个函数最多等待 N 秒。
+
+6. gtid
+   select wait_for_executed_gtid_set(gtid_set, 1);
+   等待，直到这个库执行的事务中包含传入的 gtid_set，返回 0；
+   超时返回 1。 这样就可以确定事务同步完了没有,防止获取过期数据.
+
+# 如何判断一个数据库是不是出问题了？
+
+1. select 1
+   无法判断数据阻塞的问题.
