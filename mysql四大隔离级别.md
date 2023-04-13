@@ -295,7 +295,6 @@ start slave;
    超时返回 1。 这样就可以确定事务同步完了没有,防止获取过期数据.
 
 # 如何判断一个数据库是不是出问题了？
-
 1. select 1
    无法判断并发线程阻塞的问题.
 2. select * from mysql.health_check;
@@ -306,4 +305,15 @@ start slave;
 4. 内部统计
    打开统计配置相关,全开性能降低10%.
 
-# 
+# 如何查看死锁
+使用show engine innodb status
+查看LATESTDETECTED DEADLOCK
+
+由于锁是一个个加的，要避免死锁，对同一组资源，要按照尽量相同的顺序访问；
+在发生死锁的时刻，for update 这条语句占有的资源更多，回滚成本更大，所以 InnoDB 选择了回滚成本更小的 lock in share mode 语句，来回滚。
+
+insert,update,delete都会改变间隙锁的区间范围导致死锁.
+# 误删数据怎么办
+
+
+
