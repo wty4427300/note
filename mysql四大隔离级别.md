@@ -297,4 +297,13 @@ start slave;
 # 如何判断一个数据库是不是出问题了？
 
 1. select 1
-   无法判断数据阻塞的问题.
+   无法判断并发线程阻塞的问题.
+2. select * from mysql.health_check;
+   创建一个只有一条数据的表.
+   无法检测binlog写满磁盘的情况,更新和事务无法commit的情况,但读是没问题的
+3. 更新判断
+   update mysql.health_check set t_modified=now();
+4. 内部统计
+   打开统计配置相关,全开性能降低10%.
+
+# 
