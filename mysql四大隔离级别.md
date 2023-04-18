@@ -295,6 +295,7 @@ start slave;
    超时返回 1。 这样就可以确定事务同步完了没有,防止获取过期数据.
 
 # 如何判断一个数据库是不是出问题了？
+
 1. select 1
    无法判断并发线程阻塞的问题.
 2. select * from mysql.health_check;
@@ -306,14 +307,60 @@ start slave;
    打开统计配置相关,全开性能降低10%.
 
 # 如何查看死锁
+
 使用show engine innodb status
 查看LATESTDETECTED DEADLOCK
 
 由于锁是一个个加的，要避免死锁，对同一组资源，要按照尽量相同的顺序访问；
-在发生死锁的时刻，for update 这条语句占有的资源更多，回滚成本更大，所以 InnoDB 选择了回滚成本更小的 lock in share mode 语句，来回滚。
+在发生死锁的时刻，for update 这条语句占有的资源更多，回滚成本更大，所以 InnoDB 选择了回滚成本更小的 lock in share mode
+语句，来回滚。
 
 insert,update,delete都会改变间隙锁的区间范围导致死锁.
+
 # 误删数据怎么办
 
+## 误删除行
 
+binlog至少是row格式
+对于 insert 语句，对应的 binlog event 类型是 Write_rows event，把它改成 Delete_rows event 即可；
+同理，对于 delete 语句，也是将 Delete_rows event 改为 Write_rows event；
+而如果是 Update_rows 的话，binlog 里面记录了数据行修改前和修改后的值，对调这两行的位置即可。
 
+如果有多个事务,需要按照顺序来还原
+
+## 误删库/表
+
+这种情况下，要想恢复数据，就需要使用全量备份，加增量日志的方式了。
+这个方案要求线上有定期的全量备份，并且实时备份 binlog。
+
+跳过两种
+如果原实例没有使用 GTID 模式，只能在应用到包含 12 点的 binlog 文件的时候，先用–stop-position
+参数执行到误操作之前的日志，然后再用–start-position 从误操作之后的日志继续执行；
+如果实例使用了 GTID 模式，就方便多了。假设误操作命令的 GTID 是 gtid1，那么只需要执行 set gtid_next=gtid1;begin;commit; 先把这个
+GTID 加到临时实例的 GTID 集合，之后按顺序执行 binlog 的时候，就会自动跳过误操作的语句。
+
+# kill相关
+
+1. kill query + 线程id
+2. kill connection + 线程id
+3. kill不是立即生效而是.把对应的线程标记状态.进去innodb之后,检查线程状态,在执行具体逻辑.
+
+# 查询会打爆内存吗?
+## server层
+1. 获取一行写到net_buffer中.这块内存的大小是由参数net_buffer_length定义的.默认
+大小16k.
+2. 重复获取行,知道net_buffer写满,调用网络接口发出去.
+3. 如果发送成功,就清空net_buffer,然后继续取下一行,并写入net_buffer.
+4. 如果发送函数返回eagain 或 wsaewouldblock,就表示本地网络站写满了,进入等待.
+直到网络栈可以重新写,再继续发送.
+5. 结论:分段发送,所以不会打爆内存
+
+## innodb层
+buffer pool 使用lru
+整个链表5:3分为young区和old区
+
+young区满了,新数据放在old区.
+
+old区的数据页每次被访问:
+1. 如果这个数据页在lru链表里面存在超过1秒就把他移动到链表头部
+2. 小于1秒保持位置不变
