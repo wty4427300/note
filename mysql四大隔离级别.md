@@ -362,5 +362,44 @@ buffer pool 使用lru
 young区满了,新数据放在old区.
 
 old区的数据页每次被访问:
-1. 如果这个数据页在lru链表里面存在超过1秒就把他移动到链表头部
-2. 小于1秒保持位置不变
+1. 如果这个数据页在lru链表里面存在超过1秒就把他移动到链表头部.
+2. 小于1秒保持位置不变.
+
+# join
+Index Nested-Loop Join(被驱动标走索引)
+循环嵌套join,驱动表需要全表扫描.所以小表作为驱动表比较好.
+
+如果是Block Nested-Loop Join
+还是小表当驱动表好,因为小表分块(block)少.
+
+在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，
+过滤完成之后，计算参与 join 的各个字段的总数据量，
+数据量小的那个表，就是“小表”，应该作为驱动表。
+
+# join优化
+## mrr
+1. 从被驱动表的索引里面获取满足条件的记录,将id值放入read_rnd_buffer.
+2. 排序read_rnd_buffer
+3. 按照排序完的顺序依次到主键索引去获取.排序后大概率在磁盘上是顺序读取.
+## bka
+1. 不再一行一行的join,现在驱动表获取一批,放入join_buffer
+
+# 临时表为什么可以重名
+因为是按照session+thread_id做了前缀.
+
+# 什么时候会使用内部临时表
+union的时候
+union会去重,但是union all不会.
+
+tmp_table_size用来控制临时表内存大小,默认是16m.
+
+如果内存临时表不够会转为磁盘临时表,默认使用innodb
+## group by 优化方法(索引)
+generated always 关联更新建立有序索引
+alter table t1 add column z int generated always as(id % 100), add index(z);
+
+## group by 优化方法(直接排序)
+SQL_BIG_RESULT 告诉优化器不走内存临时表,直接使用文件临时表
+select SQL_BIG_RESULT id%100 as m, count(*) as c from t1 group by m;
+
+# 是否需要使用Memory引擎
