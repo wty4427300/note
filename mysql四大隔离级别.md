@@ -402,4 +402,62 @@ alter table t1 add column z int generated always as(id % 100), add index(z);
 SQL_BIG_RESULT 告诉优化器不走内存临时表,直接使用文件临时表
 select SQL_BIG_RESULT id%100 as m, count(*) as c from t1 group by m;
 
-# 是否需要使用Memory引擎
+## 是否需要使用Memory引擎
+内存表是hash索引,主键id索引里存放的是数据的位置,而数据部分
+则是单独存放在一个内存数组里面.
+
+1. innodb存放数据总是有序的,但是内存表的数据是顺序写入的.
+2. 数据文件有空洞的时候,innodb为了保证有序性,只能在固定的位置写入新值
+而内存表找到空位就可以插入新值.
+3. 数据位置发生变化innodb只需要修改主键索引,
+而内存表需要修改所有的索引
+4. innodb支持变长数据类型,不同记录的长度可能不同;内存表
+不支持blob和text,并且即使定义了varchar(N),
+实际也当作char(N),也就是固定长度字符串来存储,因此
+内存表的每行数据长度相同.
+
+## 指定内存表使用b+树索引,不指定默认使用hash索引
+alter table t1 add index a_btree_index using btree (id);
+
+## 内存表不支持行锁,只支持表锁.因此,一张表只要有更新就会堵住其他所有在这个表上的读写操作
+
+# 主键id为什么不连续
+AUTO_INCREMENT 是一张表的自增主键计数器
+
+mysql 8.0版本存在了redo log,所以重启可以恢复.
+
+id为0,null自增+1,id有值且插入成功则更新为当前id.
+
+插入失败sql回退,但是AUTO_INCREMENT没有回退
+
+事务回滚也是如此.
+
+批量插入例如insert...select 这种sql无法提前计算出需要的id数目,所以需要锁语句
+
+但是insert...values...是可以从sql计算需要增加多少id的.
+所以申请id完成后就可以释放锁了.
+
+但是批量插入如果一个一个申请锁会很慢,所以同一个sql申请获取的锁,是上一次的两倍
+
+# insert语句的锁
+insert 唯一键冲突会在索引上加next-ket lock(读锁),阻塞其他写入.
+
+# 怎么最快速的复制一张表
+## 导出insert...values 语句并执行
+
+## 导出csv文件
+1. 主库执行完csv文件之后,把csv内容写入binlog
+2. 备库从binlog中读取csv内容,生成本地csv文件
+3. 执行load data.
+
+## 物理拷贝
+
+# grant
+
+
+
+
+
+
+
+
