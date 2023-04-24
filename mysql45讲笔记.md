@@ -346,26 +346,31 @@ GTID 加到临时实例的 GTID 集合，之后按顺序执行 binlog 的时候�
 3. kill不是立即生效而是.把对应的线程标记状态.进去innodb之后,检查线程状态,在执行具体逻辑.
 
 # 查询会打爆内存吗?
+
 ## server层
+
 1. 获取一行写到net_buffer中.这块内存的大小是由参数net_buffer_length定义的.默认
-大小16k.
+   大小16k.
 2. 重复获取行,知道net_buffer写满,调用网络接口发出去.
 3. 如果发送成功,就清空net_buffer,然后继续取下一行,并写入net_buffer.
 4. 如果发送函数返回eagain 或 wsaewouldblock,就表示本地网络站写满了,进入等待.
-直到网络栈可以重新写,再继续发送.
+   直到网络栈可以重新写,再继续发送.
 5. 结论:分段发送,所以不会打爆内存
 
 ## innodb层
+
 buffer pool 使用lru
 整个链表5:3分为young区和old区
 
 young区满了,新数据放在old区.
 
 old区的数据页每次被访问:
+
 1. 如果这个数据页在lru链表里面存在超过1秒就把他移动到链表头部.
 2. 小于1秒保持位置不变.
 
 # join
+
 Index Nested-Loop Join(被驱动标走索引)
 循环嵌套join,驱动表需要全表扫描.所以小表作为驱动表比较好.
 
@@ -377,51 +382,63 @@ Index Nested-Loop Join(被驱动标走索引)
 数据量小的那个表，就是“小表”，应该作为驱动表。
 
 # join优化
+
 ## mrr
+
 1. 从被驱动表的索引里面获取满足条件的记录,将id值放入read_rnd_buffer.
 2. 排序read_rnd_buffer
 3. 按照排序完的顺序依次到主键索引去获取.排序后大概率在磁盘上是顺序读取.
+
 ## bka
+
 1. 不再一行一行的join,现在驱动表获取一批,放入join_buffer
 
 # 临时表为什么可以重名
+
 因为是按照session+thread_id做了前缀.
 
 # 什么时候会使用内部临时表
+
 union的时候
 union会去重,但是union all不会.
 
 tmp_table_size用来控制临时表内存大小,默认是16m.
 
 如果内存临时表不够会转为磁盘临时表,默认使用innodb
+
 ## group by 优化方法(索引)
+
 generated always 关联更新建立有序索引
 alter table t1 add column z int generated always as(id % 100), add index(z);
 
 ## group by 优化方法(直接排序)
+
 SQL_BIG_RESULT 告诉优化器不走内存临时表,直接使用文件临时表
 select SQL_BIG_RESULT id%100 as m, count(*) as c from t1 group by m;
 
 ## 是否需要使用Memory引擎
+
 内存表是hash索引,主键id索引里存放的是数据的位置,而数据部分
 则是单独存放在一个内存数组里面.
 
 1. innodb存放数据总是有序的,但是内存表的数据是顺序写入的.
 2. 数据文件有空洞的时候,innodb为了保证有序性,只能在固定的位置写入新值
-而内存表找到空位就可以插入新值.
+   而内存表找到空位就可以插入新值.
 3. 数据位置发生变化innodb只需要修改主键索引,
-而内存表需要修改所有的索引
+   而内存表需要修改所有的索引
 4. innodb支持变长数据类型,不同记录的长度可能不同;内存表
-不支持blob和text,并且即使定义了varchar(N),
-实际也当作char(N),也就是固定长度字符串来存储,因此
-内存表的每行数据长度相同.
+   不支持blob和text,并且即使定义了varchar(N),
+   实际也当作char(N),也就是固定长度字符串来存储,因此
+   内存表的每行数据长度相同.
 
 ## 指定内存表使用b+树索引,不指定默认使用hash索引
+
 alter table t1 add index a_btree_index using btree (id);
 
 ## 内存表不支持行锁,只支持表锁.因此,一张表只要有更新就会堵住其他所有在这个表上的读写操作
 
 # 主键id为什么不连续
+
 AUTO_INCREMENT 是一张表的自增主键计数器
 
 mysql 8.0版本存在了redo log,所以重启可以恢复.
@@ -440,12 +457,15 @@ id为0,null自增+1,id有值且插入成功则更新为当前id.
 但是批量插入如果一个一个申请锁会很慢,所以同一个sql申请获取的锁,是上一次的两倍
 
 # insert语句的锁
+
 insert 唯一键冲突会在索引上加next-ket lock(读锁),阻塞其他写入.
 
 # 怎么最快速的复制一张表
+
 ## 导出insert...values 语句并执行
 
 ## 导出csv文件
+
 1. 主库执行完csv文件之后,把csv内容写入binlog
 2. 备库从binlog中读取csv内容,生成本地csv文件
 3. 执行load data.
@@ -453,6 +473,13 @@ insert 唯一键冲突会在索引上加next-ket lock(读锁),阻塞其他写入
 ## 物理拷贝
 
 # grant
+
+给用户赋权的
+
+# 分区表
+是mysql自己的分表策略,可以根据一个列的范围自己分成多个表.
+这些表在server层看来是一个表,在innodb层看起来是多个表,也就是说中一个表加锁不会影响另一个表.
+
 
 
 
