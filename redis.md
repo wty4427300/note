@@ -117,5 +117,28 @@ unichar flags 大小为5bit,使用低3位,0-4,来表示sds的五种类型.
 
 
 # 主从结构
+# rdb
+给redis的整个内存做了快照，然后存储到.rdb文件里面
+
+## 触发方式
+1. 手动
+执行save 或者 bgsave
+save会使用主线做持久化，会导致整个redis服务不可用
+bgsave则是fork出一个子进程来进行rdb持久化，不会阻塞主线程
+
+2. 当redis正常关停的时候会触发一次rdb
+
+3. 通过config set save x y
+将rdb设置成距上次rdb持久化超过x秒，并且有y个key被修改过
+
+4. 落盘过程
+
+先打开一个临时文件temp-进程号。rdb
+然后使用rioFile写入
+通过fflush() 和 fsync()刷盘
+调用rname()函数系应该文件名
+如果不配置的话默认是dump.rdb
+
+
 
 
