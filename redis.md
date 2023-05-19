@@ -88,5 +88,34 @@ sds禁止了内存对齐,因为需要使用指针前后移动获取字段值,为
 
 unichar flags 大小为5bit,使用低3位,0-4,来表示sds的五种类型.
 
+# 内存淘汰策略
+
+1. no-enviction:当内存满的时候,该策略不会触发淘汰,但是当客户端
+   再次发送新建key的请求或是修改已有key的请求时,redis会直接返回错误
+   但是del和get是正常响应的.
+
+2. volatile-lru:从设置了过期时间的key中选取一些进行淘汰,先采样一部分key
+   ,然后淘汰采样后的最近没有被访问的key.
+
+3. allkeys-lru:从所有的key从,淘汰最近最少使用的key.
+
+4. volatile-random: 从设置了过期时间的key里随机淘汰.
+
+5. allkeys-random:从所有key里随机淘汰.
+
+6. volatile-ttl:从设置了过期时间的key中筛选将要过期的key进行淘汰.
+
+7. volatile-lfu:过期时间的 Key 中，筛选出最近访问频率最低的 Key 进行淘汰。
+
+8. allkeys-lfu 策略：使用近似 LFU 算法从全部 Key 中，筛选出最近访问频率最低的 Key 进行淘汰。
+
+注:lru最近最少使用,lfu最近访问频率最低.
+
+# redis的key失效是如何实现的
+1. 定期扫描部分key判断key的时间戳是否是已经失效
+2. 惰性失效,即每次请求到对应key的时候判断是否过期
+
+
+# 主从结构
 
 
