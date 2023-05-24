@@ -238,3 +238,4 @@ sdown 达成的条件很简单，如果一个哨兵 ping 一个 master，超过�
 如果slave成为master候选人,那么哨兵会确保,slave复制现有的master的数据.
 如果slave连接到一个错误的master上,比如故障转移之后,哨兵确保,slave连接到
 正确的master.
+
