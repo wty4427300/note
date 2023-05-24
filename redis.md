@@ -1,4 +1,4 @@
-# Redis 线程模型演进史
+_# Redis 线程模型演进史
 
 1. redis是一个单线程应用
    redis在处理客户端请求的时候,都是由唯一的主线程进行处理的,其中包括了请求的读取和解析,
@@ -112,24 +112,25 @@ unichar flags 大小为5bit,使用低3位,0-4,来表示sds的五种类型.
 注:lru最近最少使用,lfu最近访问频率最低.
 
 # redis的key失效是如何实现的
+
 1. 定期扫描部分key判断key的时间戳是否是已经失效
 2. 惰性失效,即每次请求到对应key的时候判断是否过期
 
-
-# 主从结构
 # rdb
+
 给redis的整个内存做了快照，然后存储到.rdb文件里面
 
 ## 触发方式
+
 1. 手动
-执行save 或者 bgsave
-save会使用主线做持久化，会导致整个redis服务不可用
-bgsave则是fork出一个子进程来进行rdb持久化，不会阻塞主线程
+   执行save 或者 bgsave
+   save会使用主线做持久化，会导致整个redis服务不可用
+   bgsave则是fork出一个子进程来进行rdb持久化，不会阻塞主线程
 
 2. 当redis正常关停的时候会触发一次rdb
 
 3. 通过config set save x y
-将rdb设置成距上次rdb持久化超过x秒，并且有y个key被修改过
+   将rdb设置成距上次rdb持久化超过x秒，并且有y个key被修改过
 
 4. 落盘过程
 
@@ -139,6 +140,101 @@ bgsave则是fork出一个子进程来进行rdb持久化，不会阻塞主线程
 调用rname()函数系应该文件名
 如果不配置的话默认是dump.rdb
 
+# aof
 
+Append Only File,即只做增量持久化.核心思路就是将redis执行过的每条命令
+都保存到aof文件当中.
 
+在实际生产环境中,一般会使用rdb+aof的方案:
 
+1. rdb定时全量持久化,而rdb和故障之间的这个时间段则是用aof进行持久化.
+
+## aof落盘的三种策略
+
+1. no
+   不会主动调用fsync()刷盘,完全依赖操作系统.
+
+2. always
+   每次写入aof的时候
+   都会调用fsync进行刷盘
+   在主线程完成
+
+3. everysec
+   每秒执行一次fsync()进行刷盘.该策略是上述两种策略的折中.最多丢失1秒的
+   aof日志.在后台线程完成
+
+## aof的rewrite机制
+
+类似于lsm tree的键值合并,只留下最后的结果,减小日志的大小.
+
+# 高并发,高可用
+
+## 主从架构
+
+一主多从,主写从读.
+
+## Redis replication 的核心机制
+
+redis采取的是异步复制方式.
+
+1. 初次连接,全量复制,master启动后台线程生成rdb文件
+   同时将客户端新收到的命令缓存在内存中,rdb生成后发给slave.
+   收到后先落盘再加载到内存里,然后master将内存中缓存的新数据
+   发给slave.
+
+2. slave不会主动过期key,当master过期key时会给slave模拟一条
+   del命令
+
+## sentinel哨兵模式
+
+1. 启动单独的进程对redis集群进行管理
+   集群监控：负责监控 Redis master 和 slave 进程是否正常工作。
+   消息通知：如果某个 Redis 实例有故障，那么哨兵负责发送消息作为报警通知给管理员。
+   故障转移：如果 master node 挂掉了，会自动转移到 slave node 上。
+   配置中心：如果故障转移发生了，通知 client 客户端新的 master 地址。
+
+2. 哨兵本身也可以集群运行
+   配置quorum=1
+   意味着只要有一个哨兵认为master宕机了就可以进行切换
+   此时必须有一半以上的哨兵是可以运行的
+
+3. 配置 quorum=2 ，如果 M1 所在机器宕机了，
+   那么三个哨兵还剩下 2 个，S2 和 S3 可以一致认为
+   master 宕机了，然后选举出一个来执行故障转移，
+   同时 3 个哨兵的 majority 是 2，
+   所以还剩下的 2 个哨兵运行着，
+   就可以允许执行故障转移.
+
+## 哨兵主备切换数据丢失的问题
+
+1. 异步复制导致的数据丢失,当master->slave的复制还未结束
+   此时,master宕机,这部分数据就丢失了.
+2. 脑裂导致的数据丢失,即master因为网络脱离了集群,集群选出了另一个master
+   ,此时虽然slave切换到了新的master,但是某个client可能还连接着老的
+   master,他会向老的master写入新数据,那么对于新的master而言
+   这部分数据就丢失了.
+
+3. 解决方案
+   min-slaves-to-write 1
+   min-slaves-max-lag 10
+   意思就是至少有一个slave,数据复制和同步延迟不能超过10秒
+   一旦超过这个时间,master就不会接受任何请求了.
+
+   这个方案最丢失10秒的数据.
+
+## sdown 和 odown 转换机制
+sdown 是主观宕机，就一个哨兵如果自己觉得一个 master 宕机了，那么就是主观宕机
+odown 是客观宕机，如果 quorum 数量的哨兵都觉得一个 master 宕机了，那么就是客观宕机
+sdown 达成的条件很简单，如果一个哨兵 ping 一个 master，超过了 is-master-down-after-milliseconds 指定的毫秒数之后，
+就主观认为 master 宕机了；如果一个哨兵在指定时间内，收到了 quorum 数量的其它哨兵也认为那个 master 是 sdown 的，那么就认为是 odown 了。
+
+## 哨兵集群的自动发现机制
+使用pub/sub实现
+哨兵会往__sentinel__:hello channel中发送消息
+其他哨兵可以消费这条消息.
+消息内容就是自己的:host,ip和runid还有master.
+
+## slave配置的自动纠错
+如果slave成为master候选人,那么哨兵会确保,slave复制现有的master的数据.
+如果slave连接到一个错误的master上,比如故障转移之后,哨兵确保,slave连接到
+正确的master.
