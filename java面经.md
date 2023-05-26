@@ -735,6 +735,7 @@ return true;
 # 32.nio
 
 ## 编写流程
+
 客户端 到 buffer 到channel 到selector 到线程 开始执行
 selector.open获取一个选择器
 1.当客户端连接时，会通过serversocketchannel得到对应的socketchannel
@@ -844,8 +845,6 @@ SELECT * FROM table_name WHERE ... LOCK IN SHARE MODE，加行级读锁
 加锁的基本单位是next-key lock
 当查询的记录是存在的，Next-key Lock 会退化成记录锁
 当查询的记录是不存在的，Next-key Lock 会退化成间隙锁
-
-
 
 # 35.mybatis的缓存
 
@@ -1081,6 +1080,7 @@ admin.out 2>&1 &
 所有的 follower 都同步到了消息之后，才认为本次写成功了。如果没满足这个条件，生产者会自动不断的重试，重试无限次。
 
 ## 如何保证消息的顺序
+
 kafka在生产者写的时候可以指定一个key, 那么这个key相关的数据都会写到同一个partition当中.
 partition是以写log的方式落盘的所以一定是有序的.
 
@@ -1092,20 +1092,51 @@ partition是以写log的方式落盘的所以一定是有序的.
 即部分系统消费成功,部分消费失败.
 
 ## 消息队列的延时以及过期失效问题？消息队列满了以后该怎么处理？有几百万消息持续积压几小时，说说怎么解决？
+
 1.有积压,一般就是consumer出问题了.做法先修复问题保证正常消费.然后不做消息处理,而是转发到提前准备的多个队列中,开多
 consumer消费,消费完毕后,恢复原有架构即可.
 
 # 43.linux下的五种io模型
+
 ## Blocking I/O：
+
 阻塞 I/O
+
 ## Non-Blocking I/O：
+
 非阻塞 I/O
+
 ## I/O Multiplexing：
+
 I/O 多路复用
+
 ## Signal Blocking I/O：
+
 信号驱动 I/O
+
 ## Asynchronous I/O：
+
 异步 I/O
+
+# java类型擦除
+
+```java
+
+/**
+ * 定义一个泛型类，其中
+ * Type Parameter是T extends Number
+ * Type Variable是T
+ * Type Argument是Foo<Integer>里的Integer
+ */
+class Foo<T extends Number> {
+}
+```
+
+## 缺陷
+
+1. 泛型的类型参数<T>在编译时用于静态类型检查,但在运行时被擦除(被替换)为
+   他们的上界(没有指定则变成object),所以运行时无法获取<T>的类型信息.
+2. 所以我们无法通过反射API，在运行期获得Type Variable所代表的类型。
 
 
 

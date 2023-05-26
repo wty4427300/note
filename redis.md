@@ -223,18 +223,25 @@ redis采取的是异步复制方式.
    这个方案最丢失10秒的数据.
 
 ## sdown 和 odown 转换机制
+
 sdown 是主观宕机，就一个哨兵如果自己觉得一个 master 宕机了，那么就是主观宕机
 odown 是客观宕机，如果 quorum 数量的哨兵都觉得一个 master 宕机了，那么就是客观宕机
 sdown 达成的条件很简单，如果一个哨兵 ping 一个 master，超过了 is-master-down-after-milliseconds 指定的毫秒数之后，
-就主观认为 master 宕机了；如果一个哨兵在指定时间内，收到了 quorum 数量的其它哨兵也认为那个 master 是 sdown 的，那么就认为是 odown 了。
+就主观认为 master 宕机了；如果一个哨兵在指定时间内，收到了 quorum 数量的其它哨兵也认为那个 master 是 sdown 的，那么就认为是
+odown 了。
 
 ## 哨兵集群的自动发现机制
+
 使用pub/sub实现
 哨兵会往__sentinel__:hello channel中发送消息
 其他哨兵可以消费这条消息.
 消息内容就是自己的:host,ip和runid还有master.
 
 ## slave配置的自动纠错
+
 如果slave成为master候选人,那么哨兵会确保,slave复制现有的master的数据.
 如果slave连接到一个错误的master上,比如故障转移之后,哨兵确保,slave连接到
 正确的master.
+
+## slave->master 选举算法
+
