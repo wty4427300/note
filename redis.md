@@ -243,5 +243,6 @@ odown 了。
 如果slave连接到一个错误的master上,比如故障转移之后,哨兵确保,slave连接到
 正确的master.
 
+
 ## slave->master 选举算法
 
