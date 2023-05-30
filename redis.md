@@ -243,6 +243,60 @@ odown 了。
 如果slave连接到一个错误的master上,比如故障转移之后,哨兵确保,slave连接到
 正确的master.
 
-
 ## slave->master 选举算法
+
+如果一个master如果被人为down了.而且majority(一半以上)数量的哨兵
+允许主备切换,那么某个哨兵就会执行主备切换的操作.
+考虑一些slave的信息:
+
+1. 跟master断开链接的时长
+2. slave的优先级
+3. 复制的offset
+4. runid
+5. 如果一个 slave 跟 master 断开连接的时间已经超过了 down-after-milliseconds 的 10 倍，
+   外加 master 宕机的时长，那么 slave 就被认为不适合选举为 master。
+
+按照 slave 优先级进行排序，slave priority 越低，优先级就越高。
+如果 slave priority 相同，那么看 replica offset，哪个 slave 复制了越多的数据，offset 越靠后，优先级就越高。
+如果上面两个条件都相同，那么选择一个 run id 比较小的那个 slave
+
+总之就是和共识算法差不多,考虑最优节点.
+
+quorum 和 majority
+每次一个哨兵要做主备切换，首先需要 quorum 数量的哨兵认为 odown，然后选举出一个哨兵来做切换，这个哨兵还需要得到 majority
+哨兵的授权，才能正式执行切换。
+如果 quorum < majority，比如 5 个哨兵，majority 就是 3，quorum 设置为 2，那么就 3 个哨兵授权就可以执行切换。
+但是如果 quorum >= majority，那么必须 quorum 数量的哨兵都授权，比如 5 个哨兵，quorum 是 5，那么必须 5 个哨兵都同意授权，才能执行切换。
+configuration epoch
+哨兵会对一套 Redis master+slaves 进行监控，有相应的监控的配置。
+执行切换的那个哨兵，会从要切换到的新 master（salve->master）那里得到一个 configuration epoch，这就是一个 version 号，每次切换的
+version 号都必须是唯一的。
+如果第一个选举出的哨兵切换失败了，那么其他哨兵，会等待 failover-timeout 时间，然后接替继续执行切换，此时会重新获取一个新的
+configuration epoch，作为新的 version 号。
+configuration 传播
+哨兵完成切换之后，会在自己本地更新生成最新的 master 配置，然后同步给其他的哨兵，就是通过之前说的 pub/sub 消息机制。
+这里之前的 version 号就很重要了，因为各种消息都是通过一个 channel 去发布和监听的，所以一个哨兵完成一次新的切换之后，新的
+master 配置是跟着新的 version 号的。其他的哨兵都是根据版本号的大小来更新自己的 master 配置的。
+
+这一大段简单来说就是需要一个类似共识算法的term.用来给集群通知现在是什么master
+version.
+
+# 雪崩、穿透和击穿
+
+## 雪崩
+
+就是缓存挂了请求都打到db上
+
+解决方案:
+
+1. Redis 高可用，主从+哨兵，Redis cluster，避免全盘崩溃。
+2. 本地 ehcache 缓存 + hystrix 限流&降级，避免 MySQL 被打死。
+3. Redis 持久化，一旦重启，自动从磁盘上加载数据，快速恢复缓存数据。
+
+## 穿透
+缓存命中率低,大量请求打到了db
+
+1. 数据db也不存在,就给缓存写空值,并设置失效时间
+2. 加布隆过滤器,布隆过滤器可判定一定不存在,当可能存在的时候再去查db
+
 
