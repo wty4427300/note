@@ -35,12 +35,48 @@
 非静态锁this
 
 # 并发的问题
+
 1. 安全性
 2. 活跃性
 3. 性能
 
 ## 安全性
+
 就是避免线程出现,原子性,可见性,有序性问题.
+
 1. 场景
    对线程读写共享内存
+
+# 需求和工具
+
+1. 简单的并行
+   使用线程池和future
+2. 聚合(and 或者or)
+   使用completableFuture
+3. 批量并行
+   CompletionService
+
+# 并发设计模式
+
+## Immutability模式
+
+类,变量,方法都是final的来保证类的不可变性.
+
+1. 利用享元模式避免创建重复对象
+   比如说Integer,Long缓存的数字.
+
+## Copy-on-Write模式
+
+1. 不可变对象的写,一般使用cow实现,即创建一个新的对象.
+
+适合读多写少,数据量不大的场景.
+
+## 线程本地存储模式
+thread local
+
+## Guarded Suspension模式
+
+
+
+
 
