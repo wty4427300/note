@@ -1,4 +1,4 @@
-1.一个topic可以有多个partition
+# 1.一个topic可以有多个partition
 
 每一个partition是一个文件，每一次添加新消息，相当于对一个log日志做追加操作
 
@@ -8,11 +8,11 @@
 
 一个topic的多个partition可以跨多个broker
 
-2.生产者是线程安全的可以多线程共享一个
+# 2.生产者是线程安全的可以多线程共享一个
 
 生产send分为同步和异步两种方式：差距就是异步有callback（）函数
 
-3.生产者由两根线程协调
+# 3.生产者由两根线程协调
 主线程 和 发送线程
 主线程：主要是做拦截，序列化，分区器最后缓存到消息累加器
 发送线程：从消息累加器获取消息并发送到kafka中
@@ -28,7 +28,7 @@
 
 会有一个map缓存发送但未响应的消息k,v(nodeid,request)
 
-4.消费者相关
+# 4.消费者相关
 
 如果连续订阅两次topic以第二次为主
 
@@ -46,6 +46,8 @@ consumer.assign(new ArrayList<TopicPartition>());
 enable.auto.commit配置为true,则为自动提交
 
 手动提交分为同步提交和异步提交
+
+
 
 
 
