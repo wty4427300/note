@@ -1131,7 +1131,7 @@ I/O 多路复用
 
 异步 I/O
 
-# java类型擦除
+# 44.java类型擦除
 
 ```java
 
@@ -1150,3 +1150,20 @@ class Foo<T extends Number> {
 1. 泛型的类型参数<T>在编译时用于静态类型检查,但在运行时被擦除(被替换)为
    他们的上界(没有指定则变成object),所以运行时无法获取<T>的类型信息。
 2. 所以我们无法通过反射API，在运行期获得Type Variable所代表的类型。
+
+# 45.spring事务
+
+在Transactional中,数据库连接存储在一个ThreadLocal缓存当中,所以每一个线程有自己独立的连接,
+当主线程,或者主线程中的一个异步线程,发生异常的时候,无法做到全部回滚,因为他们使用的是不同的数据库
+连接
+
+## 结局方案
+
+
+## Spring事务失效的场景还有几点如下:
+
+1. 非public修饰
+2. final修饰也会失效, 动态代理需要重写方法才能生效事务, final修饰则无法重写
+3. static修饰也会失效
+4. 吞了异常, catch住没有抛给spring
+5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spirng事务只会处理RuntimeException和Error

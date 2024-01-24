@@ -13,6 +13,7 @@
 生产send分为同步和异步两种方式：差距就是异步有callback（）函数
 
 # 3.生产者由两根线程协调
+
 主线程 和 发送线程
 主线程：主要是做拦截，序列化，分区器最后缓存到消息累加器
 发送线程：从消息累加器获取消息并发送到kafka中
@@ -44,12 +45,66 @@ consumer.assign(new ArrayList<TopicPartition>());
 位移提交是可配置的
 
 enable.auto.commit配置为true,则为自动提交
-
+A
 手动提交分为同步提交和异步提交
 
+```java
+public class ConsumerRecord<K, V> {
+    private final String topic;
+    private final int partition;
+    private final long offset;
+    private final long timestamp;
+    //timestampType 有两种类型：CreateTime和LogAppendTime，分别代表消息创建的时间戳和消息追加到日志的时间戳。
+    private final TimestampType timestampType;
+    private final int serializedKeySize;
+    private final int serializedValueSize;
+    //headers 表示消息的头部内容。
+    private final Headers headers;
+    private final K key;
+    private final V value;
+    private volatile Long checksum;
+    //省略若干方法
+}
+```
 
+ConsumerRecords返回若干消息集合,提供Iterator方法来遍历
 
+```java
+public List<ConsumerRecord<K, V>> records(TopicPartition partition);
+```
 
+也可以这样根据partition来消费
 
+# 5.消费投递模式
 
+1. 点对点:点对点模式是基于队列的，消息生产者发送消息到队列，消息消费者从队列中接收消息
+2. 订阅:发布订阅模式定义了如何向一个内容节点发布和订阅消息，这个内容节点称为主题（Topic）
 
+* 如果所有的消费者都隶属于同一个消费组，那么所有的消息都会被均衡地投递给每一个消费者，即每条消息只会被一个消费者处理，这就相当于点对点模式的应用。
+* 如果所有的消费者都隶属于不同的消费组，那么所有的消息都会被广播给所有的消费者，即每条消息会被所有的消费者处理，这就相当于发布/订阅模式的应用。
+
+# 6.位移提交
+
+## lastConsumedOffset
+
+当前消费到的位置
+
+## position
+
+下一次拉取的消息位置
+
+## committed offset
+
+已经提交过的消费位移
+
+## 自动提交
+
+kafka默认设置是自动提交的(定期提交)
+由配置enable.auto.commit决定是否自动提交
+由配置auto.commit.interval.ms决定多少秒提交一次
+
+## 手动提交
+
+手动提交可以细分为同步提交和异步提交，对应于 KafkaConsumer 中的 commitSync() 和 commitAsync() 两种类型的方法。
+
+区别就是提交的时候是否会阻塞消费者线程.
