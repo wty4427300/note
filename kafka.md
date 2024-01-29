@@ -83,7 +83,7 @@ public List<ConsumerRecord<K, V>> records(TopicPartition partition);
 * 如果所有的消费者都隶属于同一个消费组，那么所有的消息都会被均衡地投递给每一个消费者，即每条消息只会被一个消费者处理，这就相当于点对点模式的应用。
 * 如果所有的消费者都隶属于不同的消费组，那么所有的消息都会被广播给所有的消费者，即每条消息会被所有的消费者处理，这就相当于发布/订阅模式的应用。
 
-# 6.位移提交
+# 6.消息消费
 
 ## lastConsumedOffset
 
@@ -108,3 +108,27 @@ kafka默认设置是自动提交的(定期提交)
 手动提交可以细分为同步提交和异步提交，对应于 KafkaConsumer 中的 commitSync() 和 commitAsync() 两种类型的方法。
 
 区别就是提交的时候是否会阻塞消费者线程.
+
+## 重新消费
+
+Kafka 允许你提交任何你想要的 offset，包括之前已经提交过的 offset。如果你提交了 offset=4，然后下次提交 offset=2，消费者将会从
+offset=2 的位置重新开始消费消息。
+这种情况通常用于重新消费之前的消息，可能是因为某些处理失败或者需要重新处理之前的数据。
+
+## 消费的暂停和恢复
+
+public void pause(Collection<TopicPartition> partitions)
+public void resume(Collection<TopicPartition> partitions)
+还是以partition为粒度
+
+## 退出消费
+
+使用wakeup(),并且他是线程安全的.会抛出一个WakeupException.
+使用这种方式需要手动关闭资源
+public void close()
+public void close(Duration timeout)
+@Deprecated
+public void close(long timeout, TimeUnit timeUnit)
+
+##
+![img_4.png](data%2Fimg_4.png)
