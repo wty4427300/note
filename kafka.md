@@ -130,5 +130,15 @@ public void close(Duration timeout)
 @Deprecated
 public void close(long timeout, TimeUnit timeUnit)
 
-##
+## auto.offset.reset
+
 ![img_4.png](data%2Fimg_4.png)
+当一个新的消费者被创建的时候,它没有可查询的消费位移.
+这时候kafka就会根据auto.offset.reset的配置来决定从何处消费
+
+* 默认值为latest,从分区末尾开始消费
+* earliest,从0开始消费
+* none,找不到消费位移抛出异常(NoOffsetForPartitionException)
+* 如果配置错误则报 ConfigException
+
+## 从特定位置消费
