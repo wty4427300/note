@@ -142,3 +142,19 @@ public void close(long timeout, TimeUnit timeUnit)
 * 如果配置错误则报 ConfigException
 
 ## 从特定位置消费
+
+从上次的消费位置开始消费
+endOffsets
+对应的就有beginningOffsets,但它不会一直是0,
+因为日志清理会清除老的数据
+public void seekToBeginning(Collection<TopicPartition> partitions)
+public void seekToEnd(Collection<TopicPartition> partitions)
+也可以通过kafka提供的这两个方法从开头或者结尾消费,更加简洁
+public Map<TopicPartition, OffsetAndTimestamp> offsetsForTimes(
+Map<TopicPartition, Long> timestampsToSearch)
+public Map<TopicPartition, OffsetAndTimestamp> offsetsForTimes(
+Map<TopicPartition, Long> timestampsToSearch,
+Duration timeout)
+通过这些方法可以追溯到具体的时间开始消费,map key为分区,value为时间戳
+
+## 再均衡
