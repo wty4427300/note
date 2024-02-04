@@ -70,7 +70,7 @@ public class ConsumerRecord<K, V> {
 ConsumerRecords返回若干消息集合,提供Iterator方法来遍历
 
 ```java
-public List<ConsumerRecord<K, V>> records(TopicPartition partition);
+public List<ConsumerRecord<K, V>>records(TopicPartition partition){};
 ```
 
 也可以这样根据partition来消费
@@ -158,3 +158,33 @@ Duration timeout)
 通过这些方法可以追溯到具体的时间开始消费,map key为分区,value为时间戳
 
 ## 再均衡
+
+是指分区所属权从一个消费者转移到另一个消费者的行为
+
+* 作用是为消费组高可用和伸缩性提供保障，但是再均衡发生期间，消费组内的消费者无法读取消息。
+* 如果一个消费者消费完毕但是没有提交消费偏移量，此时发生再均衡，分区分配给另一个消费者，就会发生重复消费
+
+再均衡监听器用来设定发生再均衡动作前后的一些准备或收尾的动作。
+ConsumerRebalanceListener 是一个接口
+
+1. void onPartitionsRevoked(Collection partitions)
+   这个方法会在再均衡开始之前和消费者停止读取消息之后被调用。可以通过这个回调方法来处理消费位移的提交，以此来避免一些不必要的重复消费现象的发生。参数
+   partitions 表示再均衡前所分配到的分区。
+2. void onPartitionsAssigned(Collection partitions) 这个方法会在重新分配分区之后和消费者开始读取消费之前被调用。参数
+   partitions 表示再均衡后所分配到的分区。
+
+## 消费者拦截器
+
+ConsumerInterceptor
+
+* public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records)；
+* public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets)；
+* public void close()。
+
+KafkaConsumer 会在 poll() 方法返回之前调用拦截器的 onConsume() 方法来对消息进行相应的定制化操作，比如修改返回的消息内容、按照某种规则过滤消息（可能会减少
+poll() 方法返回的消息的个数）。如果 onConsume() 方法中抛出异常，那么会被捕获并记录到日志中，但是异常不会再向上传递。
+
+KafkaConsumer 会在提交完消费位移之后调用拦截器的 onCommit() 方法，可以使用这个方法来记录跟踪所提交的位移信息，比如当消费者使用
+commitSync 的无参方法时，我们不知道提交的消费位移的具体细节，而使用拦截器的 onCommit() 方法却可以做到这一点。
+
+close() 方法和 ConsumerInterceptor 的父接口中的 configure() 方法与生产者的 ProducerInterceptor 接口中的用途一样，这里就不赘述了。
