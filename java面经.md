@@ -1166,4 +1166,4 @@ class Foo<T extends Number> {
 2. final修饰也会失效, 动态代理需要重写方法才能生效事务, final修饰则无法重写
 3. static修饰也会失效
 4. 吞了异常, catch住没有抛给spring
-5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spirng事务只会处理RuntimeException和Error
+5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spring事务只会处理RuntimeException和Error
