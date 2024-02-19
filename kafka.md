@@ -70,7 +70,7 @@ public class ConsumerRecord<K, V> {
 ConsumerRecords返回若干消息集合,提供Iterator方法来遍历
 
 ```java
-public List<ConsumerRecord<K, V>> records(TopicPartition partition);
+public List<ConsumerRecord<K, V>>records(TopicPartition partition){};
 ```
 
 也可以这样根据partition来消费
@@ -158,3 +158,99 @@ Duration timeout)
 通过这些方法可以追溯到具体的时间开始消费,map key为分区,value为时间戳
 
 ## 再均衡
+
+是指分区所属权从一个消费者转移到另一个消费者的行为
+
+* 作用是为消费组高可用和伸缩性提供保障，但是再均衡发生期间，消费组内的消费者无法读取消息。
+* 如果一个消费者消费完毕但是没有提交消费偏移量，此时发生再均衡，分区分配给另一个消费者，就会发生重复消费
+
+再均衡监听器用来设定发生再均衡动作前后的一些准备或收尾的动作。
+ConsumerRebalanceListener 是一个接口
+
+1. void onPartitionsRevoked(Collection partitions)
+   这个方法会在再均衡开始之前和消费者停止读取消息之后被调用。可以通过这个回调方法来处理消费位移的提交，以此来避免一些不必要的重复消费现象的发生。参数
+   partitions 表示再均衡前所分配到的分区。
+2. void onPartitionsAssigned(Collection partitions) 这个方法会在重新分配分区之后和消费者开始读取消费之前被调用。参数
+   partitions 表示再均衡后所分配到的分区。
+
+## 消费者拦截器
+
+ConsumerInterceptor
+
+* public ConsumerRecords<K, V> onConsume(ConsumerRecords<K, V> records)；
+* public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets)；
+* public void close()。
+
+KafkaConsumer 会在 poll() 方法返回之前调用拦截器的 onConsume() 方法来对消息进行相应的定制化操作，比如修改返回的消息内容、按照某种规则过滤消息（可能会减少
+poll() 方法返回的消息的个数）。如果 onConsume() 方法中抛出异常，那么会被捕获并记录到日志中，但是异常不会再向上传递。
+
+KafkaConsumer 会在提交完消费位移之后调用拦截器的 onCommit() 方法，可以使用这个方法来记录跟踪所提交的位移信息，比如当消费者使用
+commitSync 的无参方法时，我们不知道提交的消费位移的具体细节，而使用拦截器的 onCommit() 方法却可以做到这一点。
+
+close() 方法和 ConsumerInterceptor 的父接口中的 configure() 方法与生产者的 ProducerInterceptor 接口中的用途一样，这里就不赘述了。
+
+## 重要的消费者参数
+
+### fetch.min.bytes
+
+该参数用来配置consumer再一次拉去请求(调用poll()方法)中能从kafka中拉取的最小数，默认只为1b。
+如果返回给consumer的数据量小于这个配置的值，那么他就需要等待，直到数据量满足这个参数的配置大小。
+适当调大这个参数的值可以提高吞吐量，不过也会造成额外的延迟。
+
+### fetch.max.bytes
+
+一次拉去的最大值，默认为52428800（B），也就是50MB。但该大小，不是绝对的。
+当一个非空分区中拉去的第一条消息是大于该值的，那么该消息仍然返回，以确保消费
+者继续工作。
+
+### fetch.max.wait.ms
+
+如果 Kafka 仅仅参考 fetch.min.bytes 参数的要求，那么有可能会一直阻塞等待而无法发送响应给 Consumer，显然这是不合理的。
+fetch.max.wait.ms 参数用于指定 Kafka 的等待时间。
+
+### max.partition.fetch.bytes
+
+这个参数用来配置从每个分区里返回给 Consumer 的最大数据量，默认值为1048576（B），即1MB。这个参数与 fetch.max.bytes 参数相似
+前者用来限制一次拉取中每个分区的消息大小，后者用来限制一次拉取中整体消息的大小，同样如果参数设置比消息的大小要小，那么也不会造成无法消费
+，kafka为了保证消费逻辑的正常运转不会对此做强硬的限制。
+
+## max.poll.records
+
+这个参数用来配置 Consumer 在一次拉取请求中拉取的最大消息数，默认值为500（条）。如果消息的大小都比较小，则可以适当调大这个参数值来提升一定的消费速度。
+
+## connections.max.idle.ms
+
+这个参数用来指定在多久之后关闭闲置的连接，默认值是540000（ms），即9分钟
+
+## exclude.internal.topics
+
+__consumer_offsets 和 __transaction_state。exclude.internal.topics 用来指定 Kafka 中的内部主题是否可以向消费者公开，默认值为
+true。如果设置为 true，那么只能使用 subscribe(Collection)的方式而不能使用 subscribe(Pattern)的方式来订阅内部主题，设置为
+false 则没有这个限制。
+
+## receive.buffer.bytes
+
+这个参数用来设置 Socket 接收消息缓冲区（SO_RECBUF）的大小，默认值为65536（B），即64KB。如果设置为-1，则使用操作系统的默认值。如果
+Consumer 与 Kafka 处于不同的机房，则可以适当调大这个参数值。
+
+## send.buffer.bytes
+
+这个参数用来设置Socket发送消息缓冲区（SO_SNDBUF）的大小，默认值为131072（B），即128KB。与receive.buffer.bytes参数一样，如果设置为-1，则使用操作系统的默认值。
+
+## request.timeout.ms
+
+这个参数用来配置 Consumer 等待请求响应的最长时间，默认值为30000（ms）。
+
+## metadata.max.age.ms
+
+这个参数用来配置元数据的过期时间，默认值为300000（ms），即5分钟。如果元数据在此参数所限定的时间范围内没有进行更新，则会被强制更新，即使没有任何分区变化或有新的
+broker 加入。
+
+## reconnect.backoff.ms
+
+这个参数用来配置尝试重新发送失败的请求到指定的主题分区之前的等待（退避）时间，避免在某些故障情况下频繁地重复发送，默认值为100（ms）。
+
+## isolation.level
+
+这个参数用来配置消费者的事务隔离级别。字符串类型，有效值为“read_uncommitted”和“read_committed”，表示消费者所消费到的位置，如果设置为“read_committed”，那么消费者就会忽略事务未提交的消息，即只能消费到LSO（LastStableOffset）的位置，默认情况下为“read_uncommitted”，即可以消费到
+HW（High Watermark）处的位置。
