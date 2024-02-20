@@ -1159,7 +1159,6 @@ class Foo<T extends Number> {
 
 ## 结局方案
 
-
 ## Spring事务失效的场景还有几点如下:
 
 1. 非public修饰
