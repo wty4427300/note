@@ -722,7 +722,7 @@ return true;
 
 如果我们在master节点获取了锁，且锁还没有没有被同步到slave节点，此时如果master节点出现错误，slave节点升级为master节点就会导致锁丢失
 
-## 4.redlock(3,5,7奇数节点)
+## 4.red-lock(3,5,7奇数节点)
 
 1.获取当前Unix时间，以毫秒为单位。
 
@@ -1159,11 +1159,10 @@ class Foo<T extends Number> {
 
 ## 结局方案
 
-
 ## Spring事务失效的场景还有几点如下:
 
 1. 非public修饰
 2. final修饰也会失效, 动态代理需要重写方法才能生效事务, final修饰则无法重写
 3. static修饰也会失效
 4. 吞了异常, catch住没有抛给spring
-5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spirng事务只会处理RuntimeException和Error
+5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spring事务只会处理RuntimeException和Error
