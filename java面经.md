@@ -1166,3 +1166,59 @@ class Foo<T extends Number> {
 3. static修饰也会失效
 4. 吞了异常, catch住没有抛给spring
 5. 抛了错误的异常, catch住手动抛Exception则不会回滚, 因为spring事务只会处理RuntimeException和Error
+
+# 46.Feign 第一次调用为什么会很慢
+
+## Ribbon
+
+Feign是靠Ribbon做负载的，而Ribbon需要拿到注册中心的服务列表，
+将服务进行负载缓存到本地，然后FeignClient客户端在进行调用，大概就是这么一个过程。
+
+## RibbonClientConfiguration
+
+RibbonClientConfiguration类中通过LoadBalancer，我们知道ribbon是靠LoadBalancer做负载的
+无非就是ILoadBalancer接口的方法，依次是添加新的服务、在负载均衡里选择一个服务、markServerDown服务下线、获取服务列表、获取存活的服务器、获取所有服务器（包括健康和不健康的）
+![img_6.png](data%2Fimg_6.png)
+
+## ZoneAwareLoadBalancer
+
+loadBalancer默认的是ZoneAwareLoadBalancer负载均衡器，
+通过继承父类DynamicServerListLoadBalancer的restOfInit方法，
+里面比较重要的两个方法，enableAndInitLearnNewServersFeature和updateListOfServers方法
+
+## Ribbon负载均衡策略
+
+1. RoundRobinRule（轮询策略，按照服务顺序依次循环调用）
+
+2. WeightedResponseTimeRule（权重比策略，优先选择权重比高的服务，也就是服务响应时间比较短的，响应时间越长权重比越低）
+
+3. RandomRule（随机策略，服务提供者列表随机选择一个服务）
+
+4. BestAvailableRule（最小连接数策略，获取服务列表中连接数最小的服务实例）
+
+5. RetryRule（重试策略，重试获取已经失效的服务，指定时间没有获取到返回NULL）
+
+6. AvailabilityFilteringRule（可用性敏感策略，过滤非健康服务实例，选择lianji）
+
+7. ZoneAvoidanceRule（区域敏感策略）。
+   具体来说，ZoneAvoidanceRule 在选择服务实例时，会考虑实例所属的区域信息，并尽量选择位于不同区域的实例。这样，在某个区域发生故障或者网络问题时，仍然能够保证服务的可用性，因为其他区域的实例仍然可用。
+
+## Ribbon-eager-load（饥饿加载）模式
+
+默认是懒加载，第一次调用的时候会将feign客户端进行负载，然后进行调用，第一次调用时间就会长一点
+
+可以通过饥饿加载解决，配置如下
+
+```yaml
+ribbon:
+  nacos:
+    enabled: true # 开启naocos轮询
+  eager-load:
+    enabled: true  # 开启Ribbon的饥饿加载模式(防止第一次请求超时的问题)
+    clients: Lxlxxx-system2 # 指定需要开启的服务(需要开启Ribbon的饥饿加载模式)
+    ReadTimeout: 10000
+    ConnectTimeout: 10000
+    MaxAutoRetries: 0
+    MaxAutoRetriesNextServer: 1
+    OkToRetryOnAllOperations: false
+```
