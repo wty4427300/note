@@ -1222,3 +1222,41 @@ ribbon:
     MaxAutoRetriesNextServer: 1
     OkToRetryOnAllOperations: false
 ```
+
+# 47.B+树
+
+只有叶子节点才存储数据，其他节点存储索引，每一页16kb，意味这比b树能存储更多的数据，
+也就是说树的层数要少。那么查询效率就高。
+
+# 48.class.forName和classLoader的区别
+
+## 类加载机制
+
+1. 双亲委派：一个类加载加载类的时候，自己不能直接加载，就向上
+   寻找父加载器，知道没上级为止。
+
+## java1.8的加载器
+
+1. 启动类加载器
+2. 扩展类加载器
+3. 应用类加载器
+4. 自定义加载器
+
+## 类的生命周期
+
+1. 加载
+2. 链接（校验，准备，解析）
+3. 初始化
+4. 使用
+5. 卸载
+
+## 区别
+
+class.forName会自动初始化，执行静态代码
+如果调用
+public static Class<?> forName(String name, boolean initialize,
+ClassLoader loader)
+
+这个重载方法，则不初始化
+classLoader不初始化。
+
