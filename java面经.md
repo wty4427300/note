@@ -1025,10 +1025,13 @@ G1垃圾收集算法主要应用在多CPU大内存的服务中，在满足高吞
 3.应用需要更多可预测的GC暂停时间
 4.不希望牺牲太多的吞吐性能
 
-G1的几个概念：
-Region：G1收集器所划分的内存区域（划分内存的基本单位）
-SATB：Snapshot-At-TheBeginning，它是通过Root Tracing得到的，GC开始时候存活对象的快照
-RSet：记录了其他Region中的对象，引用本Region中对象的关系，属于points-into结构（谁引用了我的对象
+## G1的几个概念：
+
+1. Region：G1收集器所划分的内存区域（划分内存的基本单位）
+2. SATB：Snapshot-At-TheBeginning，它是通过Root Tracing得到的，GC开始时候存活对象的快照
+3. RSet：记录了其他Region中的对象，引用本Region中对象的关系，属于points-into结构（谁引用了我的对象
+   这其实是一个类似哈希的结构，key是别的region的起始地址，value是一个集合，里面存储的元素是卡表的索引号
+4. 每个region哟i两个tams指针，把region中的一部分空间划分出来用于并发回收过程中的新对象分配。
 
 G1中的Young GC过程，和以往的是一样的：
 新对象进入Eden区
@@ -1044,6 +1047,13 @@ G1里还有一个概念叫全局并发标记（global concurrent marking），�
 3.Concurrent marking phase：并发标记存活对象
 4.Remark phase：重新标记，STW
 Cleanup phase：部分STW
+
+## g1的步骤
+
+1. 初始标记
+2. 并发标记
+3. 最终标记
+4. 筛选回收
 
 G1相关调优参数：
 设置堆占有率达到这个参数值则触发global concurrent marking，默认值为45%：
