@@ -342,6 +342,25 @@ start slave;
    等待，直到这个库执行的事务中包含传入的 gtid_set，返回 0；
    超时返回 1。 这样就可以确定事务同步完了没有,防止获取过期数据.
 
+## 实践
+
+* 配置
+  在主库上启用二进制日志（Binary Log），这是进行数据复制的基础。通常在/etc/my.cnf或my.ini配置文件中添加或修改以下参数：
+
+1.      [mysqld]
+   server-id=1 # 设置主库的唯一ID
+   log-bin=mysql-bin # 开启二进制日志功能，并设置日志文件前缀
+   binlog_format=row # 建议使用行格式记录事务
+2.     [mysqld]
+   server-id=2 # 设置从库的唯一ID
+3. 在从库上执行 CHANGE MASTER TO 命令，指定主库的信息和复制位置：
+   CHANGE MASTER TO
+   MASTER_HOST='主库IP',
+   MASTER_USER='replication_user', # 复制账号
+   MASTER_PASSWORD='replication_password', # 复制密码
+   MASTER_LOG_FILE='mysql-bin.000001', # 主库的二进制日志文件名
+   MASTER_LOG_POS=123; # 主库的日志起始位置
+
 # 如何判断一个数据库是不是出问题了？
 
 1. select 1
@@ -621,5 +640,8 @@ trx_id 2^48-1之前的事务就会读取到trx_id为0的事务,从而脏读.
 3. table:涉及到的表
 4. type:表示访问表的方式，通常包括 ALL（全表扫描）、INDEX（索引扫描）等。
 5. key:如果使用了索引，表示被使用的索引。
-6. row:估计需要扫描的行数。
-7. extra:包含其他信息，如是否使用了临时表、文件排序等。
+6. key_len:表示索引的长度。
+7. row:估计需要扫描的行数。
+8. extra:包含其他信息，如是否使用了临时表、文件排序等。
+9. possible_keys如果该列为NULL，则说明没有可用的索引。
+   如果列中列出了一些索引名，那么这些索引都有可能在执行SQL查询时提高效率，优化器会根据查询的具体条件、表数据分布以及其他因素（如统计信息）来决定最终选择哪个索引来执行查询，这个选定的索引会在key列中体现出来。
