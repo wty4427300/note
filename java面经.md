@@ -1556,6 +1556,18 @@ go语言是有栈协程实现。
 异常或中断：当硬件设备需要操作系统干预时（如键盘输入、网络数据到达），会产生中断信号，CPU响应中断后会进入内核态执行相应的处理程序。
 
 ## 用户态和内核态切换
+
 操作系统在启动的时候会使用mmu机制，对物理内存进行虚拟化映射。
 用户态程序有自己的虚拟地址空间，这个空间被限制在某个范围之内，不允许直接访问内核代码和数据所在的地址区域。
 内核拥有独立且全部的虚拟地址空间，其中包含了内核代码、内核数据结构以及所有硬件设备的驱动程序等。
+
+# 56. CompleteableFuture
+
+1. 异常处理：需要调用exceptionally()方法处理。
+2. 避免阻塞：使用thenApply，thenAccept，thenRun等方法处理。
+   thenApply接受一个函数作为参数，将CompletableFuture的结果作为输入，并返回一个新的值。
+   thenAccept接受一个消费者作为参数，将CompletableFuture的结果作为输入，并不返回任何值。
+   thenRun接受一个Runnable作为参数，在CompletableFuture完成时执行，不接受任何参数，也不返回任何值。
+3. 链式调用：使用thenCompose，thenCombine，thenApplyAsync等方法处理。
+4. 资源管理：使用了数据库链接，io操作等要及时的关闭。
+5. 执行策略：指定线程池来执行任务。
