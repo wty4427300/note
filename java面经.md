@@ -499,6 +499,67 @@ UDP 则没有，即使网络非常拥堵了，也不会影响 UDP 的发送速�
 
 ### http1.0
 
+单次连接，请求完成就断开
+
+### http1.1
+
+1. keep-alive 长连接避免了链接的创建和发释放，通过content-length
+   来判断当前请求是否结束。
+2. 断点续传。
+3. 支持host头域，不在意ip为请求方标志。
+
+### http2.0
+
+1. 二进制传输
+2. 多路复用共享链接
+3. header头压缩
+
+### https
+
+1. 客户端和服务端443端口建立tcp链接
+2. 客户端发起请求，服务端回复ssl证书
+3. 客户端验证证书，得到服务器公钥(ssl证书就是ca私钥签名的服务器公钥，客户端验证就是使用浏览器内置的ca公钥验签)。
+4. RSA密钥交换：
+
+   ```
+   // 客户端生成随机数作为pre-master secret
+   pre_master_secret = generate_random_number()
+
+   // 使用服务器公钥加密pre-master secret
+   encrypted_pre_master_secret = encrypt_with_server_public_key(pre_master_secret)
+
+   // 将加密的pre-master secret发送给服务器
+   send_to_server(encrypted_pre_master_secret)
+
+   // 服务器使用私钥解密pre-master secret
+   pre_master_secret = decrypt_with_server_private_key(encrypted_pre_master_secret)
+
+   // 客户端和服务器计算会话密钥
+   master_secret = calculate_master_secret(pre_master_secret, client_random, server_random)
+
+   // 使用master_secret计算加密和认证密钥
+   ```
+
+   ECDHE等动态密钥交换算法：双方通过交换公钥和临时生成的随机数计算出共享的会话密钥。
+    * 初始化阶段：
+      服务器拥有一个长期的公钥-私钥对，公钥已存放在服务器的数字证书中。
+      客户端和服务器都选择一个椭圆曲线算法和相关的参数。
+    * 密钥交换开始：
+      客户端和服务器各自生成一个新的椭圆曲线上的 ephemeral (临时)密钥对，分别为客户端的ephemeral私钥(Ca)和公钥(Qc)
+      ，以及服务器的ephemeral私钥(Sa)和公钥(Qs)。
+    * 交换公钥：
+      服务器将自己的ephemeral公钥Qs随同证书一同发送给客户端。
+      客户端接收到服务器的公钥后，将自身的ephemeral公钥Qc发送给服务器。
+    * 计算共享密钥：
+      客户端使用服务器的ephemeral公钥Qs和自己的ephemeral私钥Ca计算出共享的秘密点，然后通过约定的哈希函数转化为共享密钥Kc。
+      同样地，服务器使用客户端的ephemeral公钥Qc和自己的ephemeral私钥Sa计算出共享的秘密点，并同样转化为共享密钥Ks。
+    * 会话密钥生成：
+      由于ECDHE算法的性质，客户端和服务器计算出的共享密钥Kc和Ks是相同的。
+      这个共享密钥随后会被双方用来通过密钥导出函数（Key Derivation Function, KDF）生成会话密钥和相关的加密参数，用于保护后续HTTP请求和响应的通信安全。
+    * 加密通信：
+      利用上述生成的会话密钥，客户端和服务器可以进行加密和认证的HTTPS通信。
+5. 之后通过会话密钥加密数据，进行请求和回复就好。
+
 # 21.关于cas
 
 1.本质
