@@ -1681,6 +1681,22 @@ go语言是有栈协程实现。
 4. 资源管理：使用了数据库链接，io操作等要及时的关闭。
 5. 执行策略：指定线程池来执行任务。
 
+## get和join的区别
+
+### CompletableFuture.get()
+
+该方法会阻塞当前线程，直到 CompletableFuture 中的异步计算完成。
+如果计算过程中抛出了异常，get() 方法会将该异常包装成 ExecutionException 并抛出；若是在等待过程中被中断，还会抛出
+InterruptedException。
+因此，在调用 get() 时，程序员需要捕获 ExecutionException 和 InterruptedException 异常，以便了解和处理异步计算的结果。
+
+### CompletableFuture.join()
+
+同样会阻塞当前线程直到 CompletableFuture 中的异步计算完成。
+不同之处在于，join() 方法不会抛出异常。即使异步计算过程中发生了异常，join() 方法也不会抛出这些异常，而是将异常保存在
+CompletableFuture 的内部状态中，可以通过调用 CompletableFuture.isCompletedExceptionally() 方法来检查是否发生异常，然后通过
+CompletableFuture.completeExceptionally() 或 CompletableFuture.get() 获取具体的异常信息。
+
 # 57.io多路复用
 
 ## select
