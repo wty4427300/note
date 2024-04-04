@@ -757,8 +757,8 @@ JDK 动态代理只能只能代理实现了接口的类，而 CGLIB 可以代理
 类型的类和方法。就二者的效率来说，大部分情况都是 JDK 动态代理更优秀，随着 JDK 版本的升级，这个优势更加明显。
 
 ## aspect的实践
-1. 在类上
 
+1. 在类上
 
 # 27.关于ThreadLocal
 
@@ -1154,7 +1154,7 @@ SELECT * FROM table_name WHERE ... LOCK IN SHARE MODE，加行级读锁
 
 # 39.g1垃圾回收器
 
-# 垃圾回收活动类型
+## 垃圾回收活动类型
 
 1. Minor GC（年轻代垃圾回收）：
    Minor GC主要针对的是Java堆内存中的年轻代（Young Generation）区域。年轻代通常被分为Eden区、Survivor 0区和Survivor 1区。
@@ -1289,6 +1289,13 @@ admin.out 2>&1 &
 
 里面会有eden，survivor,heap，metaspace大小以及使用量。可以判断那一块内存不足
 (full 1),1会正常自增，出现多少次说明有多少次full gc。
+
+## 部分资料
+https://developer.aliyun.com/article/1318354#slide-3
+https://cloud.tencent.com/developer/article/2223588
+https://zhuanlan.zhihu.com/p/490833155
+https://cloud.tencent.com/developer/article/1518229
+https://juejin.cn/post/7217304466076336184#heading-20
 
 # 40.双检锁的一些问题
 
@@ -1489,6 +1496,10 @@ ribbon:
     MaxAutoRetriesNextServer: 1
     OkToRetryOnAllOperations: false
 ```
+
+## 其他资料
+
+https://mp.weixin.qq.com/s/2u66t4Q0RMRLLEoMUhUG6A
 
 # 47.B+树
 

@@ -1,3 +1,6 @@
+# 部分资料
+https://mp.weixin.qq.com/s/kvZBbENeLoEjZUblb3ckaA
+
 # go build
 
 go build的时候默认不会安装目标代码包所依赖的代码包。当然，如果被依赖的代码包归档文件不存在，或者源码文件有了变化，那么他还是会被编译的。
