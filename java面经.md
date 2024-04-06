@@ -1291,6 +1291,7 @@ admin.out 2>&1 &
 (full 1),1会正常自增，出现多少次说明有多少次full gc。
 
 ## 部分资料
+
 https://developer.aliyun.com/article/1318354#slide-3
 https://cloud.tencent.com/developer/article/2223588
 https://zhuanlan.zhihu.com/p/490833155
@@ -1734,3 +1735,35 @@ CompletableFuture.completeExceptionally() 或 CompletableFuture.get() 获取具�
 软中断是可以调度的，也就是说它们可以在进程上下文而非中断上下文中执行，这意味着它们可以睡眠并等待资源。
 软中断主要用于处理那些不紧急或者不适合在硬中断上下文中执行的延后任务，例如处理硬中断中的下半部工作，或者定期执行的后台任务。
 总结来说，硬中断主要处理来自硬件的突发性事件，保证快速响应；软中断则作为内核内部的一种协同机制，处理更为复杂的同步和异步操作。两者相互配合，共同构成了现代操作系统中高效、灵活的中断处理体系结构。
+
+# 59.spring aop
+
+1. 在类上加@Aspect定义该类是一个切面
+2. Pointcut切点定义切面要拦截的类和方法
+3. Advice定义切面要拦截的类和方法要执行的代码
+
+* advice有5种
+
+1. before 前置通知
+2. after return 后置通知(无异常代码正常执行完毕)
+3. around 环绕通知(代码前后执行)
+4. after throwing 异常通知
+5. after finally 最终通知(无论代码是否异常都会被执行)
+
+* Pointcut切点
+
+1. * execution(public * com.medical.customer.controller.*.*(..))
+2. execution(* com.example.service.*.*(..))
+
+execution(：固定语法，标志着切入点表达式的开始。
+* com.example.service.*.*(..)：
+*：表示返回类型任意，即不关心返回值是什么类型。
+com.example.service：指定了包名，表示我们只关注com.example.service包及其子包下的类。
+*.*：第一个.前的*代表包下的任意类名；第二个.后的*代表类中的任意方法名。
+(..)：表示方法接受任意数量、任意类型的参数。这里的两个点表示零个或多个参数，括号内的星号表示参数类型可以是任何类型。
+)：固定语法，标志着切入点表达式的结束。
+综上所述，execution(* com.example.service.*.*(..)) 这个切入点表达式匹配规则如下：
+目标方法位于com.example.service包及其子包下的任何类中。
+方法可以有任意返回类型。
+方法名可以是任意名称。
+方法可以接受任意数量、任意类型的参数。
