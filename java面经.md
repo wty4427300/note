@@ -1307,7 +1307,7 @@ https://juejin.cn/post/7217304466076336184#heading-20
 
 对象传引用,基础类型传值
 
-# 42.mq相关
+# 42.mq相关(主要kafka)
 
 优点:解耦,异步,削峰
 
@@ -1341,21 +1341,19 @@ https://juejin.cn/post/7217304466076336184#heading-20
 
 ## 消息丢失怎么办(kafka)
 
-1.消费端丢失
-消费到一半,服务挂了,或者消费错误,但是自动提交了当期消息的offset.
-(处理方法关闭自动提交).
+1. 消费端丢失
+   消费到一半,服务挂了,或者消费错误,但是自动提交了当期消息的offset.
+   (处理方法关闭自动提交).
 
-2.kafka丢数据
-就是当leader broker的挂掉,但follower broker的数据有部分没有完全同步.那么当
-当前follower成为leader的时候就会丢失一部分数据.
+2. kafka丢数据
+   就是当leader broker的挂掉,但follower broker的数据有部分没有完全同步.那么当
+   当前follower成为leader的时候就会丢失一部分数据.
 
 给 topic 设置 replication.factor 参数：这个值必须大于 1，要求每个 partition 必须有至少 2 个副本。
 在 Kafka 服务端设置 min.insync.replicas 参数：这个值必须大于 1，这个是要求一个 leader 至少感知到有至少一个 follower
 还跟自己保持联系，没掉队，这样才能确保 leader 挂了还有一个 follower 吧。
 在 producer 端设置 acks=all ：这个是要求每条数据，必须是写入所有 replica 之后，才能认为是写成功了。
 在 producer 端设置 retries=MAX （很大很大很大的一个值，无限次重试的意思）：这个是要求一旦写入失败，就无限重试，卡在这里了。
-
-这些参数保证leader不会丢失数据,但是最新版本使用raft的版本,应该不存在这种问题,因为raft保证节点半数以上数据不丢失.
 
 3.生产者会不会弄丢数据
 如果按照上述的思路设置了 acks=all ，一定不会丢，要求是，你的 leader 接收到消息，
@@ -1383,6 +1381,28 @@ consumer消费,消费完毕后,恢复原有架构即可.
 1. 根据延时等级创建n个topic
 2. 消费者消费到Java延时服务的delay queue中，当时间到达的时候在发送到真正的业务topic
 3. 消费业务topic即可
+
+## kafka ack机制
+
+通过控制生产者发送消息到 broker 以及 broker 间复制消息时的确认策略，来降低消息丢失的可能性。以下是如何通过 Kafka 的 ACK
+机制来保证数据不丢失的详细说明。
+
+### ACK 策略
+
+Kafka 提供了以下几种 ACK 策略供生产者配置：
+
+1. acks=0：
+   生产者发送消息后，不等待任何来自 broker 的确认，只要消息成功发出到网络，就认为发送成功。
+   风险：在这种模式下，如果消息在网络传输过程中丢失或 broker 在接收到消息前崩溃，生产者无法得知，消息将丢失。
+2. acks=1（默认值）：
+   生产者发送消息后，等待 leader partition（主分区）的 broker 返回确认。
+   风险：如果 leader partition 收到消息后、向生产者发送确认前崩溃，或者确认消息在网络中丢失，生产者会认为消息未发送成功并尝试重发，此时有可能造成消息重复；另外，如果在确认发送后、follower
+   partition（副本分区）复制消息前 leader partition 崩溃，那些未完成复制的消息在 leader 恢复后会被视为已提交，但 follower
+   上缺失这部分数据，导致数据丢失。
+3. acks=all 或 acks=-1：
+   生产者发送消息后，等待 leader partition 以及 ISR（In-Sync Replicas，同步副本集）中所有 follower partition 都确认收到消息。
+   可靠性：只有当所有 ISR 中的副本都成功接收到消息时，生产者才会收到确认。这种模式下，即使 leader partition
+   崩溃，由于所有副本都已接收消息，新选举的 leader 可以保证数据完整，从而最大限度地避免数据丢失。
 
 # 43.linux下的五种io模型
 
@@ -1752,18 +1772,20 @@ CompletableFuture.completeExceptionally() 或 CompletableFuture.get() 获取具�
 
 * Pointcut切点
 
-1. * execution(public * com.medical.customer.controller.*.*(..))
+1.
+    * execution(public * com.medical.customer.controller.*.*(..))
 2. execution(* com.example.service.*.*(..))
 
 execution(：固定语法，标志着切入点表达式的开始。
+
 * com.example.service.*.*(..)：
-*：表示返回类型任意，即不关心返回值是什么类型。
-com.example.service：指定了包名，表示我们只关注com.example.service包及其子包下的类。
-*.*：第一个.前的*代表包下的任意类名；第二个.后的*代表类中的任意方法名。
-(..)：表示方法接受任意数量、任意类型的参数。这里的两个点表示零个或多个参数，括号内的星号表示参数类型可以是任何类型。
-)：固定语法，标志着切入点表达式的结束。
-综上所述，execution(* com.example.service.*.*(..)) 这个切入点表达式匹配规则如下：
-目标方法位于com.example.service包及其子包下的任何类中。
-方法可以有任意返回类型。
-方法名可以是任意名称。
-方法可以接受任意数量、任意类型的参数。
+  *：表示返回类型任意，即不关心返回值是什么类型。
+  com.example.service：指定了包名，表示我们只关注com.example.service包及其子包下的类。
+  *.*：第一个.前的*代表包下的任意类名；第二个.后的*代表类中的任意方法名。
+  (..)：表示方法接受任意数量、任意类型的参数。这里的两个点表示零个或多个参数，括号内的星号表示参数类型可以是任何类型。
+  )：固定语法，标志着切入点表达式的结束。
+  综上所述，execution(* com.example.service.*.*(..)) 这个切入点表达式匹配规则如下：
+  目标方法位于com.example.service包及其子包下的任何类中。
+  方法可以有任意返回类型。
+  方法名可以是任意名称。
+  方法可以接受任意数量、任意类型的参数。

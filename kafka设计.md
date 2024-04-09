@@ -168,4 +168,4 @@ follower像普通的kafka消费者一样使用来自领导的消息，并将其�
 * 在 Kafka 中，一个特殊的节点 称为“控制器”，负责管理集群中broker的注册。broker 活性有两个条件：
 
 1. broker必须与控制器保持活动会话，以便接收定期元数据更新。
-2. 作为follower的broker必须复制leader的写作，而不是“太落后”。
+2. 作为follower的broker必须复制leader的写操作，而不是“太落后”。
