@@ -1,4 +1,4 @@
-# auto-kafka用到的云原生技术
+~~# auto-kafka用到的云原生技术
 
 1. Spot Instances(https://aws.amazon.com/ec2/spot/): Offload storage to EBS and S3, and make the broker stateless to
    leverage Spot Instances for up to 90% cost savings.
@@ -17,4 +17,17 @@
    family, when combined with EBS, allows AutoMQ to provide Regional WAL, filling a gap left by AWS's lack of Regional
    EBS.
 7. S3: Obviously, we all need it.
+
+# AutoMQ 如何解决 Kafka 冷读副作用
+
+## 什么是冷都
+简单的说就是数据不在page cache中，需要从磁盘中读取。
+
+## 冷都带来的副作用
+1. io争用，其他topic读写性能受损.
+2. page cache污染，命中率下降.
+3. ZeroCopy失效，数据传输性能受损(sendfile).
+
+## 解决方案
+
 
