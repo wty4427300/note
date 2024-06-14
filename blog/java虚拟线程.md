@@ -59,6 +59,7 @@ JDK中的一些阻塞操作不会卸载虚拟线程，因此会阻塞其载体�
 # 如何使用？
 
 ## 1.简单的使用
+
 ```
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
     IntStream.range(0, 10_000).forEach(i -> {
@@ -77,6 +78,7 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 * 并发任务的数量很多（超过几千个），并且工作负载不受 CPU 限制，因为在这种情况下，线程数比处理器内核多得多，无法提高吞吐量。
 
 ## 2.请求合并
+
 ```
 handleExecutorService
 
@@ -99,6 +101,7 @@ String fetchURL(URL url) throws IOException {
     }
 }
 ```
+
 比如这样做请求合并
 
 ## 3.使用信号量限制虚拟线程，而不是固定大小的线程池
