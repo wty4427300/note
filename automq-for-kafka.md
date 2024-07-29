@@ -1,4 +1,4 @@
-~~# auto-kafka用到的云原生技术
+# auto-kafka用到的云原生技术
 
 1. Spot Instances(https://aws.amazon.com/ec2/spot/): Offload storage to EBS and S3, and make the broker stateless to
    leverage Spot Instances for up to 90% cost savings.
