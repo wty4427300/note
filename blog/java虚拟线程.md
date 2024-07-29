@@ -106,4 +106,27 @@ String fetchURL(URL url) throws IOException {
 
 ## 3.使用信号量限制虚拟线程，而不是固定大小的线程池
 
-##
+因为，线程池只能限制os线程的数量，而无法限制协程数量。
+
+## 4.如何判断一个thread是否是虚拟线程
+
+Thread.isVirtual()
+
+# 什么时候虚拟线程会被绑定到具体os。
+
+1. 当它在块或方法内执行代码时，或者synchronized
+2. 当它执行一个方法或一个外来函数时。native
+
+# 限制
+
+1. 虚拟线程的当前限制是 G1 GC 不支持大的堆栈块对象。如果虚拟线程的堆栈达到区域大小的一半（可能小至
+   512KB），则可能会抛出StackOverflowError。
+2. 虚拟线程始终是守护线程，Thread.setDaemon（boolean）方法不能将虚拟线程更改为非守护程序线程。
+
+# Scoped Values (Third Preview)(等正式版再补充)
+
+## ThreadLocal设计的缺陷
+
+1. 无可变性约束。
+2. 无限生存期。
+3. 通过使用 InheritableThreadLocal，子线程可以继承父线程的线程局部变量
