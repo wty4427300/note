@@ -1,4 +1,4 @@
-~~# auto-kafka用到的云原生技术
+# auto-kafka用到的云原生技术
 
 1. Spot Instances(https://aws.amazon.com/ec2/spot/): Offload storage to EBS and S3, and make the broker stateless to
    leverage Spot Instances for up to 90% cost savings.
@@ -30,4 +30,11 @@
 
 ## 解决方案
 
+### 冷热隔离
+1. 冷热隔离：冷热数据存储在不同的云存储上，但是这里的提升感觉上不太直观。
 
+* 对象存储读取性能优化：通过预读、并发和缓存等手段直接从对象存储读取数据，保证了整体上优异的吞吐性能。
+
+### 自主内存管理
+1. 自主内存管理，不使用page cache自然没有污染的副作用。
+2. 使用 Direct I/O 读写裸设备

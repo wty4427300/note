@@ -1,4 +1,6 @@
-## 1.jdk8的内存模型
+# 1.java内存模型
+
+## jdk8的内存模型
 
 1.栈
 2.堆(新生代（eden和幸存代）和老年代)
@@ -8,7 +10,7 @@
 6.本地方法栈
 7.堆外（直接内存）
 
-### jdk21的内存模型
+## jdk21的内存模型
 
 1. 寄存器pc，程序计数器
 2. 本地方法栈
@@ -1789,3 +1791,31 @@ execution(：固定语法，标志着切入点表达式的开始。
   方法可以有任意返回类型。
   方法名可以是任意名称。
   方法可以接受任意数量、任意类型的参数。
+
+# 60.@Resource和@Autowired的区别
+
+## 来源与标准
+@Autowired 是由 Spring 框架提供的注解，专门用于按类型自动装配 Bean。
+@Resource 是来自 J2EE（Java EE，现在称为 Jakarta EE）规范 JSR-250 的注解，它不仅可以在 Spring 中使用，也适用于遵循该规范的其他Java应用服务器。
+
+## 默认注入行为
+@Autowired 默认按照类型（byType）进行匹配，如果容器中存在多个相同类型的 Bean，则需要通过 @Qualifier 注解来指定具体的 Bean 名称。
+@Resource 默认按照 Bean 的名称（byName）进行匹配，如果找不到匹配名称的 Bean，则会尝试按类型注入。如果名称和类型都匹配不上，
+@Resource 注解的使用可能会导致异常，因为它不允许找不到 Bean 的情况。
+
+## 可配置性
+@Autowired 可以通过设置其 required 属性为 false 来允许注入的 Bean 为 null，增加了灵活性。
+@Resource 没有直接的属性来控制是否允许 Bean 为 null，但可以通过不提供名称（即不显式指定 name 属性）来利用 byType 的方式，这在某种程度上影响其行为，尽管不如 @Autowired 明确。
+
+# 61.xxl-job
+
+# 62.@Component，@Service，@Repository的区别
+都是用来注入bean的。
+@Component是通用的，一般用来注入业务无关的通用组件。
+@Service是业务逻辑层，
+@Repository是数据访问层，
+@Controller是控制层。
+
+
+
+
